@@ -1,0 +1,29 @@
+#Dependances
+node_modules
+
+#Fichiers de build
+.next
+/dist/
+.vinxi/
+.vinext/
+.wrangler/
+
+#Fichiers d'environnement
+.env*
+.env.local
+.env.*.local
+.dev.vars*
+*.dev.vars
+.dev.vars.*
+
+
+#OS et Editeur
+.DS_Store
+.vscode/
+.idea/
+
+#Logs
+npm-debug.log
+
+
+/app/generated/prisma
