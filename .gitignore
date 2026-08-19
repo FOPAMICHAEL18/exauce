@@ -26,5 +26,9 @@ node_modules
 #Logs
 npm-debug.log
 
+# AI Assistants / Skills
+.claude/
+.windsurf/
+
 
 /app/generated/prisma
