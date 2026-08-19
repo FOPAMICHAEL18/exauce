@@ -11,7 +11,7 @@
     "@vinext/cloudflare": "latest",
     "leaflet": "^1.9.4",
     "pg": "^8.23.0",
-    "prisma": "^7.9.1",
+    "prisma": "^6.12.0",
     "react": "latest",
     "react-dom": "latest",
     "react-leaflet": "^5.0.0",
@@ -43,5 +43,8 @@
     "deploy": "vinext-cloudflare deploy --config dist/server/wrangler.json",
     "preview": "npm run build && npm run start --",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts"
+  },
+  "prisma": {
+    "seed": "tsx --env-file=.dev.vars prisma/seed.ts"
   }
 }

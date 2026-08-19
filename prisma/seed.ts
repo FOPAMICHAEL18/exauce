@@ -14,10 +14,6 @@
 // const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 // const adapter = new PrismaNeon(pool as any);
 // const prisma = new PrismaClient({ adapter })
-
-import dotenv from "dotenv";
-// On charge explicitement le fichier .dev.vars
-dotenv.config({ path: ".dev.vars" });
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {faker} from '@faker-js/faker'
