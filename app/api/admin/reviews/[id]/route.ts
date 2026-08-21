@@ -82,7 +82,7 @@ const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promi
         return Response.json({
             success: false,
             message: "Erreur serveur modification du tatus de l'avis:"
-        }, {status: 500})
+        })
     }
 }
 
@@ -132,7 +132,7 @@ const DELETE = async (request:NextRequest, {params}: {params: {id: string}}): Pr
         return Response.json({
             success: true,
             message: `Produit ${existingReview.author} supprimer avec succes`,
-        }, {status: 500})
+        })
     }
     catch(error) {
         //On verifie si c'est une erreur javascript

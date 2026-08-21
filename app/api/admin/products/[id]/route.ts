@@ -96,7 +96,7 @@ const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promi
             success: true,
             message: 'Produit modifier avec succes',
             product: updateProduct
-        }, {status: 500})
+        })
     }
     catch(error) {
         //On verifie si c'est une erreur javascript
