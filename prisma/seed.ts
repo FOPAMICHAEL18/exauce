@@ -14,10 +14,13 @@
 // const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 // const adapter = new PrismaNeon(pool as any);
 // const prisma = new PrismaClient({ adapter })
+import dotenv from "dotenv";
+dotenv.config({ path: ".dev.vars" });
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {faker} from '@faker-js/faker'
 import { Pool } from "pg";
+import bcrypt from "bcryptjs";
 
 // Configuration du pool PG et de l'adaptateur pour Cloudflare / Neon
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -32,8 +35,8 @@ const main = async (): Promise<void> => {
     //On les supprime dans un ordre precis a cause des cles etrangeres
     await prisma.review.deleteMany() 
     await prisma.image.deleteMany() 
-    await prisma.category.deleteMany() 
-    await prisma.product.deleteMany() 
+    await prisma.product.deleteMany()
+    await prisma.category.deleteMany()  
     await prisma.contact.deleteMany() 
     await prisma.admin.deleteMany() 
     console.log('🧹 Base nettoye')
@@ -44,7 +47,7 @@ const main = async (): Promise<void> => {
             name: 'admin',
             surname: 'perdu',
             email: 'adminperdu@getMaxListeners.com',
-            password: '$2b$10$HashedPasswordPlaceholder' //On le remplacera plus tard
+            password: await bcrypt.hash('motDePasse123', 10) //On le remplacera plus tard
         }
     })
     console.log('✅ Admin cree:', admin.email)
@@ -145,3 +148,4 @@ main()
     //fermeture de la connection avec Neon
     await prisma.$disconnect()
 })
+

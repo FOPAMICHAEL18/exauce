@@ -4,9 +4,10 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "exauce",
+	"name": "atelierlume",
 	"compatibility_date": "2026-08-18",
 	"main": "vinext/server/fetch-handler",
+	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
 		"directory": "dist/client",
 		"not_found_handling": "none",
@@ -21,6 +22,13 @@
 	"observability": {
 		"enabled": true
 	},
+	"rules": [
+    {
+      "type": "CompiledWasm",
+      "globs": ["**/*.wasm"],
+      "fallthrough": true
+    }
+  	],	
 	"upload_source_maps": true
 	/**
 	 * Smart Placement
