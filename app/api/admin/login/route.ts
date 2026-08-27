@@ -1,15 +1,7 @@
-import { PrismaClient } from "@prisma/client/edge"; //edge doit etre ajouter pour que prisma puisse s'adapter a next 
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import { prisma } from "@/app/lib/prisma"; 
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
-
-
-// Configuration du pool PG et de l'adaptateur pour Cloudflare / Neon
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
 
 const JWT_SECRET = process.env.JWT_SECRET
 if (!JWT_SECRET) {
@@ -41,7 +33,7 @@ const POST = async (request:Request): Promise<Response> => {
         if (!admin) {
             return Response.json({
                 success: false,
-                error: "Email et mot de passe incorrecte"
+                error: "Email ou mot de passe incorrecte"
             }, {status: 401}) // 401 car unauthorized
         }
 
@@ -49,7 +41,7 @@ const POST = async (request:Request): Promise<Response> => {
         if (!isPasswordValid) {
             return Response.json({
                 success: false,
-                error: "Email et mot de passe incorrecte"
+                error: "Email ou mot de passe incorrecte"
             }, {status: 401})
         }
 

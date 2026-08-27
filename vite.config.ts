@@ -18,6 +18,6 @@ export default defineConfig({
     }),
   ],
   optimizeDeps: {
-    exclude: ["@prisma/client", ".prisma/client"],
+    exclude: ["@prisma/client", ".prisma/client", "vinext", "@prisma/adapter-neon", "@neondatabase/serverless"],
   },
 });

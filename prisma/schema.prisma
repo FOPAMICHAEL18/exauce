@@ -38,9 +38,11 @@ model Product {
   price         Decimal  @db.Decimal(10, 2)
   stockStatus   String   @default("disponible")
   categoryId    Int
+  views         Int      @default(0)
   category      Category @relation(fields:[categoryId], references: [id])
   image         Image[]
   review        Review[]
+  viewLogs      View[]  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -59,7 +61,7 @@ model Image {
 model Review {
   id            Int       @id @default(autoincrement())
   author        String    //Nom ou pseudo
-  email         String   @unique
+  email         String   
   rating        Int      //1 a 5
   comment       String    @db.Text
   status        String    @default("published") // published ou hidden
@@ -80,4 +82,15 @@ model Contact {
   longitude     Float?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+}
+
+model View {
+  id            Int       @id @default(autoincrement())
+  sessionId    String  //Identifiant unique du visiteur (generer par le serveur)
+  productId     Int    //ID du produit consulter
+  product       Product   @relation(fields: [productId], references:[id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+
+  // Contrainte d'unicite: empeche la meme session de compter deux fois le meme produit 
+  @@unique([sessionId, productId])
 }

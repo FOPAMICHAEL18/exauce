@@ -1,14 +1,6 @@
 //Version ameliorer de request  permetant de renvoyer une reponse et de modifier une requete avant qu'elle n'arrive a la destination finale
 import {NextRequest, NextResponse} from 'next/server'
-import { PrismaClient } from "@prisma/client/edge"; //edge doit etre ajouter pour que prisma puisse s'adapter a next 
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
-
-
-// Configuration du pool PG et de l'adaptateur pour Cloudflare / Neon
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import { prisma } from "@/app/lib/prisma"; 
 
 const PUT = async (request:NextRequest): Promise<Response> => {
     try {
