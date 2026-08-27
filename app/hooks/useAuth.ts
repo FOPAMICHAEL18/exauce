@@ -70,7 +70,8 @@ const useAuth = () => {
                 localStorage.setItem('adminToken', response.data.token)
                 setIsAuthenticated(true)
                 setUser(response.data.admin)
-                router.push('/Admin/Dashboard')
+                // ✅ REDIRECTION AVEC RECHARGEMENT COMPLET
+                window.location.href = '/Admin/Dashboard'
                 return {success: true}
             }
             else {

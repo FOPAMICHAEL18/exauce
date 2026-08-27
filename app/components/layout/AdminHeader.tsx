@@ -12,6 +12,7 @@ export default function AdminHeader() {
     const titles: Record<string, string> = {
     '/Admin/Dashboard': 'Tableau de bord',
     '/Admin/Products': 'Produits',
+    '/Admin/Products/Edit': 'Modifier le produit',
     '/Admin/Categories': 'Catégories',
     '/Admin/Reviews': 'Commentaires',
     '/Admin/Contact': 'Coordonnées',
@@ -39,9 +40,14 @@ export default function AdminHeader() {
             </div> */}
 
                 
-            <button onClick={logout} className='text-sm text-white transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
-                <span>Deconnexion</span>
-            </button>
+            <div className='flex gap-2'>
+                <Link href='/Admin/Products/new' className='text-sm  transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
+                    <span className='text-white'>+ Ajouter un produit</span>
+                </Link>
+                <button onClick={logout} className='text-sm text-white transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
+                    <span>Deconnexion</span>
+                </button>
+            </div>
         </header>
     )
 } 

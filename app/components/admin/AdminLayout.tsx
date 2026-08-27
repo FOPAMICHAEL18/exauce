@@ -9,10 +9,15 @@ import { useAuth } from '@/app/hooks/useAuth'
 export default function AdminLayout({children}: {children: React.ReactNode}) {
     const pathname= usePathname()
     const {loading, isAuthenticated} = useAuth()
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
 
     //Ecran de chargement 
-    if (loading) {
+    if (loading || !isMounted) {
         return (
             <div className='flex items-center justify-center min-h-screen'>
                 <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-[#0A1730]'></div>
@@ -30,6 +35,7 @@ export default function AdminLayout({children}: {children: React.ReactNode}) {
 
     //On affiche rien sur lsi l'utilisateur n'est pas authentifier
     if (!isAuthenticated) {
+        console.log(isAuthenticated)
         return null
     }
 

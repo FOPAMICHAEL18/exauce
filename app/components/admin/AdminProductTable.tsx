@@ -124,7 +124,7 @@ const AdminProductTable = ({
                                                 <div className="w-10 h-10 rounded-md bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 shrink-0">
                                                     <Package className="w-5 h-5" />
                                                 </div>
-                                                <Link href={`/Admin/Products/${product.id}/edit`} className='hover:underline text-gray-800 font-medium line-clamp-1'>
+                                                <Link href={`/Admin/Products/${product.id}/Edit`} className='hover:underline text-gray-800 font-medium line-clamp-1'>
                                                     {product.title}
                                                 </Link>
                                             </div>
@@ -142,7 +142,7 @@ const AdminProductTable = ({
                                         </td>
                                         <td className='text-right px-4 py-3 whitespace-nowrap'>
                                             <div className="flex items-center justify-end gap-2">
-                                                <Link href={`/Admin/Products/${product.id}/edit`} className="p-1.5 text-gray-500 hover:text-blue-600">
+                                                <Link href={`/Admin/Products/${product.id}/Edit`} className="p-1.5 text-gray-500 hover:text-blue-600">
                                                     <Edit className="w-4 h-4" />
                                                 </Link>
                                                 <button onClick={() => handleDelete(product.id)} disabled={deletingId === product.id} className="p-1.5 text-gray-500 hover:text-red-600">
