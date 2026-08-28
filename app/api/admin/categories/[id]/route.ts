@@ -16,92 +16,71 @@ const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promi
 
         //Recuperation de la l'id du produit 
         const {id} = params
-        const productId = parseInt(id, 10)
+        const categoryId = parseInt(id, 10)
 
-        if (isNaN(productId)) {
+        if (isNaN(categoryId)) {
             return Response.json({
                 success: false,
-                message: "Id de produit non valide"
+                message: "Id de categorie non valide"
             }, {status: 400}) // Requete incorrecte
         }
-        //Verification de si le produit existe 
-        const existingProduct = await prisma.product.findUnique({
+        //Verification de si la categorie existe 
+        const existingCategory = await prisma.category.findUnique({
             where: {
-                id: productId
+                id: categoryId
             }
         })
-        if (!existingProduct) {
+        if (!existingCategory) {
             return Response.json({
                 success: false,
-                message: "Produit non trouver"
+                message: "Categorie non trouver"
             }, {status: 404}) // ressource demander introuvable
         }
 
         //recuperation du body
         const body = (await request.json()) as Record<string, unknown> // Retourne des cles en string qui ont des valeurs unknown
-        const title = typeof body.title === 'string' ? body.title : existingProduct.title
-        const description = typeof body.description === 'string' ? body.description : existingProduct.description
-        const price = typeof body.price === 'string' ? body.price : ( typeof body.price === 'number' ? String(body.price) : String(existingProduct.price))
-        const stockStatus = typeof body.stockStatus === 'string' ? body.stockStatus : existingProduct.stockStatus
-        const categoryId = typeof body.categoryId === 'string' ? body.categoryId : ( typeof body.categoryId === 'number' ? String(body.categoryId) : String(existingProduct.categoryId))
+        const name = typeof body.name === 'string' ? body.name : existingCategory.name
 
         //Validation basique
-        if (!title ||!description || !price || !categoryId || !stockStatus) {
+        if (!name) {
             return Response.json({
                 success: false,
-                message: "Titre, description, prix, status et category sont requis"
+                message: "Le nom est requis"
             }, {status: 400})
         }
         
-        const category = await prisma.category.findUnique({
-            where: {
-                id: parseInt(categoryId, 10)
-            }
-        })
-
-        if (!category) {
-            return Response.json({
-                success: false,
-                message: "Categorie non trouver"
-            }, {status: 400})
-        }
-
         //Mise a jour 
-        let slug = existingProduct.slug
-        if (title !== slug) {
-            slug = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g, '') //Enleve tout les accents et remplace les espaces vides pas les tiret (-) et supprime tout ce qui n'est pas lettre, chiffre ou tiret
+        let slug = existingCategory.slug
+        if (name !== slug) {
+            slug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g, '') //Enleve tout les accents et remplace les espaces vides pas les tiret (-) et supprime tout ce qui n'est pas lettre, chiffre ou tiret
         }
 
-        const updateProduct = await prisma.product.update({
-            where: {id: productId},
+        const updateCategory = await prisma.category.update({
+            where: {id: categoryId},
             data: {
-                title: title.trim(),
+                name: name.trim(),
                 slug: slug,
-                description: description.trim(),
-                price: parseFloat(price),
-                stockStatus: stockStatus.trim(),
-                categoryId: parseInt(categoryId, 10)
             }
         })
 
         return Response.json({
             success: true,
-            message: 'Produit modifier avec succes',
-            product: updateProduct
+            message: 'Categorie modifier avec succes',
+            product: updateCategory
         })
     }
     catch(error) {
         //On verifie si c'est une erreur javascript
         if (error instanceof Error) {
-            console.log('Erreur API modification du produit:', error.message)
+            console.log('Erreur API modification de la categorie:', error.message)
         }
         else {
-            console.log('Erreur inconnu API modification du produit', error)
+            console.log('Erreur inconnu API modification de la categorie', error)
         }
 
         return Response.json({
             success: false,
-            message: 'Erreur modification du produit'
+            message: 'Erreur modification de la categorie'
         }, {status: 500})
     }
 }
@@ -121,51 +100,51 @@ const DELETE = async (request:NextRequest, {params}: {params: {id: string}}): Pr
 
         //Recuperation de la l'id du produit 
         const {id} = params
-        const productId = parseInt(id, 10)
+        const categoryId = parseInt(id, 10)
 
-        if (isNaN(productId)) {
+        if (isNaN(categoryId)) {
             return Response.json({
                 success: false,
-                message: "Id de produit non valide"
+                message: "Id de la categorie non valide"
             }, {status: 400}) // Requete incorrecte
         }
         //Verification de si le produit existe 
-        const existingProduct = await prisma.product.findUnique({
+        const existingCategory = await prisma.category.findUnique({
             where: {
-                id: productId
+                id: categoryId
             }
         })
-        if (!existingProduct) {
+        if (!existingCategory) {
             return Response.json({
                 success: false,
-                message: "Produit non trouver"
+                message: "Categorie non trouver"
             }, {status: 404}) // ressource demander introuvable
         }
 
         
 
         //Suppression du produit
-        await prisma.product.delete({
-            where: {id: productId},
+        await prisma.category.delete({
+            where: {id: categoryId},
         })
 
         return Response.json({
             success: true,
-            message: `Produit ${existingProduct.title} supprimer avec succes`,
+            message: `Produit ${existingCategory.name} supprimer avec succes`,
         })
     }
     catch(error) {
         //On verifie si c'est une erreur javascript
         if (error instanceof Error) {
-            console.log('Erreur API suppression du produit:', error.message)
+            console.log('Erreur API suppression de la categorie:', error.message)
         }
         else {
-            console.log('Erreur inconnu API suppression du produit', error)
+            console.log('Erreur inconnu API suppression de la categorie', error)
         }
 
         return Response.json({
             success: false,
-            message: 'Erreur suppression du produit'
+            message: 'Erreur suppression de la categorie'
         }, {status: 500})
     }
 }

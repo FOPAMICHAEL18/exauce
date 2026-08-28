@@ -39,7 +39,7 @@ model Product {
   stockStatus   String   @default("disponible")
   categoryId    Int
   views         Int      @default(0)
-  category      Category @relation(fields:[categoryId], references: [id])
+  category      Category @relation(fields:[categoryId], references: [id], onDelete: Cascade)
   image         Image[]
   review        Review[]
   viewLogs      View[]  
@@ -53,7 +53,7 @@ model Image {
   altText       String?   //Texte alternatif pour le SEO
   order         Int       @default(0) // Ordre d'affichage
   productId     Int
-  product       Product    @relation(fields: [productId], references: [id])
+  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }

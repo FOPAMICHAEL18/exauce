@@ -20,7 +20,7 @@ const POST = async (request: NextRequest): Promise<Response> => {
         const description = typeof body.description === 'string' ? body.description : ''
         const price = typeof body.price === 'string' ? body.price : ( typeof body.price === 'number' ? String(body.price) : '')
         const stockStatus = typeof body.stockStatus === 'string' ? body.stockStatus : ''
-        const categoryId = typeof body.category === 'string' ? body.category : ''
+        const categoryId = typeof body.categoryId === 'string' ? body.categoryId : ( typeof body.categoryId === 'number' ? String(body.categoryId) : '')
 
         //Validation basique
         if (!title ||!description || !price || !categoryId || !stockStatus) {
@@ -68,13 +68,13 @@ const POST = async (request: NextRequest): Promise<Response> => {
     catch(error) {
         //On verifie si c'est une erreur javascript
         if (error instanceof Error) {
-            console.log('Erreur API admin/product:', error.message)
+            console.log('Erreur API admin/products:', error.message)
         }
         else {
-            console.log('Erreur inconnu API admin/product', error)
+            console.log('Erreur inconnu API admin/products', error)
         }
 
-        return new Response('Erreur admin/product', {status: 500})
+        return new Response('Erreur admin/products', {status: 500})
     }
 }
 

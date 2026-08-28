@@ -126,7 +126,7 @@ const AdminProductForm = ({ initialData, categories }: AdminProductFormProps) =>
       // Si c'est une création, on redirige vers la liste des produits après 1.5s.
       if (!isEditing) {
         setTimeout(() => {
-          router.push('/admin/products');
+          router.push('/Admin/Products');
         }, 1500);
       }
     } catch (error) {
@@ -137,7 +137,7 @@ const AdminProductForm = ({ initialData, categories }: AdminProductFormProps) =>
   };
 
   const handleCancel = () => {
-    router.push('/admin/products');
+    router.push('/Admin/Products');
   };
 
   return (

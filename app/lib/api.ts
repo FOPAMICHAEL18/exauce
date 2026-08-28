@@ -39,7 +39,7 @@ const apiCall = async <T = unknown>(
         const response = await fetch(url, {...options, headers})
         const data = await response.json() as Record<string, any>
 
-        if (!response.ok) { //response.ok esr false si le code HTTP est 400, 401, 404, 500 etc...
+        if (!response.ok) { //response.ok est false si le code HTTP est 400, 401, 404, 500 etc...
 
             // === CAS SPÉCIAL : 401 (Token invalide ou expiré) ===
             // Si le serveur renvoie 401, on déclenche la redirection automatique.

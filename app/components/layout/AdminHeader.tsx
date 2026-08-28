@@ -8,23 +8,39 @@ export default function AdminHeader() {
     const pathname= usePathname()
     const {logout} = useAuth()
 
+    // 1. Normalisation en minuscules pour éviter les bugs de casse
+    const currentPath = pathname.toLowerCase()
 
-    const titles: Record<string, string> = {
-    '/Admin/Dashboard': 'Tableau de bord',
-    '/Admin/Products': 'Produits',
-    '/Admin/Products/Edit': 'Modifier le produit',
-    '/Admin/Categories': 'Catégories',
-    '/Admin/Reviews': 'Commentaires',
-    '/Admin/Contact': 'Coordonnées',
-    '/Admin/Settings': 'Paramètres',
+    // 2. Détection dynamique pour l'édition de produit avec ID
+    const getTitle = (): string => {
+        // Vérifie si le chemin correspond au pattern /admin/products/[id]/edit
+        if (/\/admin\/products\/[^/]+\/edit/.test(currentPath)) {
+            return 'Modifier le produit'
+        }
+        if (/\/admin\/categories\/[^/]+\/edit/.test(currentPath)) {
+            return 'Modifier la categorie'
+        }
+
+        const staticTitles: Record<string, string> = {
+            '/admin/dashboard': 'Tableau de bord',
+            '/admin/products': 'Produits',
+            '/admin/products/new': 'Creer un produits',
+            '/admin/categories': 'Gestion des catégories',
+            '/admin/categories/new': "Creation d'une catégories",
+            '/admin/reviews': 'Commentaires',
+            '/admin/contact': 'Coordonnées',
+            '/admin/settings': 'Paramètres',
+        }
+
+        return staticTitles[currentPath] || 'Administration'
     }
 
-    const value = titles[pathname] || 'Administration'
+
 
     return (
         <header className='flex justify-between items-center py-4 px-20'>
             <h1 className='text-2xl font-bold text-gray-800'>
-                {value}
+                {getTitle()}
             </h1>
 
             {/* <div className='flex gap-4'>
@@ -41,7 +57,7 @@ export default function AdminHeader() {
 
                 
             <div className='flex gap-2'>
-                <Link href='/Admin/Products/new' className='text-sm  transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
+                <Link href='/Admin/Products/New' className='text-sm  transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
                     <span className='text-white'>+ Ajouter un produit</span>
                 </Link>
                 <button onClick={logout} className='text-sm text-white transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
