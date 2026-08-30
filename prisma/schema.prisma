@@ -74,7 +74,8 @@ model Review {
 model Contact {
   id            Int       @id @default(autoincrement())
   address       String    @db.Text 
-  phone         String      
+  phone         String
+  whatsapp      String?      
   email         String    
   hours         String?   
   socials       String?
