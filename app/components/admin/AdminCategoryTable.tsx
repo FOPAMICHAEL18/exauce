@@ -120,7 +120,7 @@ const AdminCategoryTable = ({currentPage, totalPages, categories} : AdminCategor
                                                 <div className="w-10 h-10 rounded-md bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 shrink-0">
                                                     <MessageSquareText className="w-5 h-5" />
                                                 </div>
-                                                <Link href={`/Admin/Products/${category.id}/Edit`} className='hover:underline text-gray-800 font-medium line-clamp-1'>
+                                                <Link href={`/Admin/Categories/${category.id}/Edit`} className='hover:underline text-gray-800 font-medium line-clamp-1'>
                                                     {category.name}
                                                 </Link>
                                             </div>

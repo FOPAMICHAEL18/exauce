@@ -2,7 +2,7 @@
 import {NextRequest, NextResponse} from 'next/server'
 import { prisma } from "@/app/lib/prisma"; 
 
-const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promise<Response> => {
+const PUT = async (request:NextRequest, {params}: {params: Promise<{id: string}>}): Promise<Response> => {
     try {
         //Recuperer l'admin depuis la propriete ajoutee par le middleware 
         const adminHeader = request.headers.get('x-admin-data')
@@ -15,7 +15,7 @@ const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promi
         }
 
         //Recuperation de la l'id de l'avis
-        const {id} = params
+        const {id} = await params
         const reviewId = parseInt(id, 10)
 
         if (isNaN(reviewId)) {
@@ -37,19 +37,9 @@ const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promi
             }, {status: 404}) // ressource demander introuvable
         }
 
-        //recuperation du body
-        const body = (await request.json()) as Record<string, unknown> // Retourne des cles en string qui ont des valeurs unknown
-        const newStatus = typeof body.status === 'string' ? body.status : ''
-
-        //Validation basique
-        if (newStatus !== 'published' && newStatus !== 'hidden') {
-            return Response.json({
-                success: false,
-                message: "Le status doit etre published ou hidden"
-            }, {status: 400})
-        }
+        // 4. Inversion automatique du statut (Bascule / Toggle)
+        const newStatus = existingReview.status === 'published' ? 'hidden' : 'published';
         
-
         const updateReview = await prisma.review.update({
             where: {id: reviewId},
             data: {
@@ -61,7 +51,7 @@ const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promi
             success: true,
             message: `Status de l'avis mis a jour : ${newStatus}`,
             review: updateReview
-        }, {status: 500})
+        }, {status: 200})
     }
     catch(error) {
         //On verifie si c'est une erreur javascript
@@ -74,7 +64,7 @@ const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promi
 
         return Response.json({
             success: false,
-            message: "Erreur serveur modification du tatus de l'avis:"
+            message: "Erreur serveur modification du tatus de l'avis"
         })
     }
 }
