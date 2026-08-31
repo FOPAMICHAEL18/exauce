@@ -29,7 +29,7 @@ export default function AdminHeader() {
             '/admin/categories/new': "Creation d'une catégories",
             '/admin/reviews': 'Commentaires',
             '/admin/contact': 'Coordonnées',
-            '/admin/settings': 'Paramètres',
+            "/admin/profil": "Profil de l'utilisateur"
         }
 
         return staticTitles[currentPath] || 'Administration'

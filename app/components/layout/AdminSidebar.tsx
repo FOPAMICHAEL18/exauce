@@ -8,7 +8,7 @@ const menuItems = [
     {href: '/Admin/Categories', icon: <Folders size={24} />, label: 'Categories'},
     {href: '/Admin/Reviews', icon: <MessageSquareText size={24} />, label: 'Commentaires'},
     {href: '/Admin/Contact', icon: <ContactRound size={24} />, label: 'Coordonnees'},
-    {href: '/Admin/Settings', icon: <Settings size={24} />, label: 'Parametres'}
+    {href: '/Admin/Profil', icon: <Settings size={24} />, label: 'Profil'}
 ]
 
 export default function AdminSidebar() {

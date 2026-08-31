@@ -2,13 +2,13 @@
 import {NextRequest, NextResponse} from 'next/server'
 import { prisma } from "@/app/lib/prisma"; 
 
-const POST = async (request: NextRequest): Promise<Response> => {
+const POST = async (request: NextRequest): Promise<NextResponse> => {
     try{
         //Recuperer l'admin depuis la propriete ajoutee par le middleware 
         const adminHeader = request.headers.get('x-admin-data')
         const admin = adminHeader ? JSON.parse(adminHeader) : null
         if (!admin) {
-            return Response.json({
+            return NextResponse.json({
                 success: false,
                 message: "Non autoriser"
             }, {status: 401})
@@ -20,7 +20,7 @@ const POST = async (request: NextRequest): Promise<Response> => {
 
         //Validation basique
         if (!name) {
-            return Response.json({
+            return NextResponse.json({
                 success: false,
                 message: "Le nom est requis"
             }, {status: 400})
@@ -38,7 +38,7 @@ const POST = async (request: NextRequest): Promise<Response> => {
             } 
         })
 
-        return Response.json({
+        return NextResponse.json({
                 success: true,
                 message: "Categorie cree avec succes",
                 category
@@ -54,7 +54,7 @@ const POST = async (request: NextRequest): Promise<Response> => {
             console.log('Erreur inconnu API admin/categories', error)
         }
 
-        return new Response('Erreur admin/categories', {status: 500})
+        return new NextResponse('Erreur admin/categories', {status: 500})
     }
 }
 
