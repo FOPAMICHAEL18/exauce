@@ -15,8 +15,8 @@ const Navlink = ({href, children, activeClassName, className, exact}: NavlinkPro
     //Determine si le lien est actif 
     const isActive = exact ? pathname === href : pathname.startsWith(href)
     return (
-        <Link href={href} className={`${className} ${isActive? activeClassName : ''}`}>{children}</Link>
+        <Link href={href}> <span className={`${className} ${isActive? activeClassName : ''}`}>{children}</span> </Link>
     )
-}
+} 
 
 export default Navlink

@@ -41,6 +41,7 @@ const AdminProductFilters = ({
             router.push(`${pathname}?${params.toString()}`)
         })
     }
+    
 
     return (
         <form 
@@ -52,7 +53,7 @@ const AdminProductFilters = ({
                 <input 
                     type="search" 
                     value={search} 
-                    onChange={(e) => setSearch(e.target.value)} 
+                    onChange={(e) => {setSearch(e.target.value); if(e.target.value === '') {updateURL('', category, status)}}} 
                     placeholder='Rechercher un produit (Entrée)...' 
                     className='bg-white block w-full px-3 py-2 pr-9 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-[#0A1730]' 
                 />

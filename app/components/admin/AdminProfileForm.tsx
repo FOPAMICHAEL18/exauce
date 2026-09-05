@@ -103,8 +103,11 @@ const AdminProfileForm = () => {
 
     if (loading) {
         return (
-        <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#0A1730]"></div>
+        <div className="space-y-6 animate-pulse">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-gray-200 rounded-xl h-96"></div>
+                <div className="bg-gray-200 rounded-xl"></div>
+            </div>
         </div>
         );
     }

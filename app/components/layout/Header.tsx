@@ -1,0 +1,42 @@
+'use client'
+import Link from "next/link"
+import { useState } from "react"
+import Navlink from "../ui/Navlink"
+import { Menu, X } from 'lucide-react';
+
+
+const Header = () => {
+    const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const navItems = [
+        { href: '/', label: 'Accueil' },
+        { href: '/catalogue', label: 'Catalogue' },
+        { href: '/comment-ca-marche', label: 'Comment ça marche' },
+        { href: '/avis-clients', label: 'Avis clients' },
+        { href: '/a-propos', label: 'À propos' },
+    ]
+
+    return (
+        <header className="bg-white">
+            <div className="container mx-auto p-4 flex justify-between items-center">
+                <Link href="/" className="text-2xl font-bold text-amber-700">
+                    exauce
+                </Link>
+                <nav className="hidden md:flex gap-6">
+                    {navItems.map((item, index) => (
+                        <Navlink key={index} href={item.href} exact={false} activeClassName="border-b-3 border-[#0A1730] " className="text-gray-600 hover:border-b-3 hover:border-[#0A1730] p-1">
+                            {item.label}
+                        </Navlink>
+                    ))}
+                </nav>
+                <Link href="Admin/Login" className="hidden md:block  bg-[#0A1730] text-white px-4 py-2 rounded hover:opacity-80 transition-colors">
+                    <span className="text-white">Espace vendeur</span>
+                </Link>
+                <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                    {isMenuOpen ? <X/> : <Menu/>}
+                </button>
+            </div>
+        </header>
+    )
+}
+
+export default Header

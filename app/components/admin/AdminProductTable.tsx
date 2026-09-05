@@ -3,7 +3,8 @@
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
-import { Package, Trash2, Edit, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { Package, Trash2, Edit, ChevronLeft, ChevronRight, Loader2, AlertTriangle, X } from 'lucide-react'
+import { DeleteModal } from '../ui/Modal/DeleteModal'
 import { apiCall } from '@/app/lib/api'
 
 interface AdminProductTableProps {
@@ -37,6 +38,7 @@ const AdminProductTable = ({
     const [isPending, startTransition] = useTransition()
     const [loadingPage, setLoadingPage] = useState<number | null>(null)
     const [deletingId, setDeletingId] = useState<number | null>(null)
+    const [productToDelete, setProductToDelete] = useState<{id: number, title: string} | null>(null)
 
     // Reset l'indicateur dès que la nouvelle page s'affiche
     useEffect(() => {
@@ -61,12 +63,21 @@ const AdminProductTable = ({
         })
     }
 
-    const handleDelete = async (productId: number) => {
-        if (!confirm('Voulez-vous vraiment supprimer ce produit ?')) return
-        setDeletingId(productId)
+    const openDeleteModal = (id: number, title: string) => {
+        setProductToDelete({id , title})
+    }
+
+    const closeDeleteModal = () => {
+        setProductToDelete(null)
+    }
+
+    const confirmDelete = async () => {
+        if (!productToDelete) return
+        setDeletingId(productToDelete.id)
+        closeDeleteModal()
 
         try {
-            const response = await apiCall<any>(`/api/admin/products/${productId}`, { method: 'DELETE' })
+            const response = await apiCall<any>(`/api/admin/products/${productToDelete.id}`, { method: 'DELETE' })
             if (response.success) {
                 startTransition(() => {
                     router.refresh()
@@ -85,6 +96,10 @@ const AdminProductTable = ({
 
     return (
         <div className='space-y-4 relative'>
+            {/* Modale de Confirmation de Suppression */}
+            {productToDelete && (
+                <DeleteModal elementToDelete={productToDelete.title} closeDeleteModal={closeDeleteModal} confirmDelete={confirmDelete}  />
+            )}
             <div className='bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm relative'>
                 
                 {/* Overlay immédiat au changement de page */}
@@ -97,15 +112,15 @@ const AdminProductTable = ({
                     </div>
                 )}
 
-                {/* Overlay immédiat au changement de page du a la suppression d'un produit*/}
-                {isPending !== isLoading  && (
-                    <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center z-30 transition-all">
-                        <div className="flex items-center gap-2 bg-[#0A1730] text-white px-4 py-2 rounded-lg text-xs font-medium shadow-lg">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>suppression du produit...</span>
+                {/* Overlay pour mise à jour de données (suppression ou masquage) */}
+                    {isPending && !isLoading && (
+                        <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center z-30 transition-all">
+                            <div className="flex items-center gap-2 bg-[#0A1730] text-white px-4 py-2 rounded-lg text-xs font-medium shadow-lg">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <span>Mise à jour en cours...</span>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
                 {products.length === 0 ? (
                     <div className='p-8 text-center text-gray-400'>
@@ -116,9 +131,6 @@ const AdminProductTable = ({
                         <table className='w-full text-sm text-left border-collapse'>
                             <thead>
                                 <tr className='text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 bg-gray-50/80'>
-                                    <th className="px-4 py-3.5 w-10 text-center">
-                                        <input type="checkbox" className="rounded border-gray-300 text-[#0A1730] focus:ring-0" />
-                                    </th>
                                     <th className='px-4 py-3.5 font-semibold'>PRODUIT</th>
                                     <th className='px-4 py-3.5 font-semibold'>CATÉGORIE</th>
                                     <th className='px-4 py-3.5 font-semibold'>PRIX</th>
@@ -129,9 +141,6 @@ const AdminProductTable = ({
                             <tbody className="divide-y divide-gray-100">
                                 {products.map((product) => (
                                     <tr key={product.id} className='hover:bg-gray-50/80 transition-colors'>
-                                        <td className="px-4 py-3 text-center">
-                                            <input type="checkbox" className="rounded border-gray-300 text-[#0A1730] focus:ring-0" />
-                                        </td>
                                         <td className="px-4 py-3 font-medium text-gray-900">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-md bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 shrink-0">
@@ -155,11 +164,11 @@ const AdminProductTable = ({
                                         </td>
                                         <td className='text-right px-4 py-3 whitespace-nowrap'>
                                             <div className="flex items-center justify-end gap-2">
-                                                <Link href={`/Admin/Products/${product.id}/Edit`} className="p-1.5 text-gray-500 hover:text-blue-600">
-                                                    <Edit className="w-4 h-4" />
+                                                <Link href={`/Admin/Products/${product.id}/Edit`} className="p-1.5 text-gray-500 ">
+                                                    <Edit className="w-4 h-4 hover:text-blue-600" />
                                                 </Link>
-                                                <button onClick={() => handleDelete(product.id)} disabled={deletingId === product.id} className="p-1.5 text-gray-500 hover:text-red-600">
-                                                    <Trash2 className="w-4 h-4" />
+                                                <button onClick={() => openDeleteModal(product.id, product.title)} disabled={deletingId === product.id} className="p-1.5 text-gray-500 hover:text-red-600">
+                                                    {deletingId === product.id ? <Loader2 className="w-4 h-4 animate-spin text-red-600" /> : <Trash2 className="w-4 h-4" />}
                                                 </button>
                                             </div>
                                         </td>

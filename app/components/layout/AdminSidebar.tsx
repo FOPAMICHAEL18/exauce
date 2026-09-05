@@ -1,6 +1,6 @@
 "use client"
 import Navlink from "../../components/ui/Navlink";
-import { LayoutDashboard, Package, Folders, MessageSquareText, ContactRound, Settings } from 'lucide-react';
+import { LayoutDashboard, Package, Folders, MessageSquareText, ContactRound, UserRoundPen } from 'lucide-react';
 
 const menuItems = [
     {href: '/Admin/Dashboard', icon: <LayoutDashboard size={24} />, label: 'Tableau de bord'},
@@ -8,7 +8,7 @@ const menuItems = [
     {href: '/Admin/Categories', icon: <Folders size={24} />, label: 'Categories'},
     {href: '/Admin/Reviews', icon: <MessageSquareText size={24} />, label: 'Commentaires'},
     {href: '/Admin/Contact', icon: <ContactRound size={24} />, label: 'Coordonnees'},
-    {href: '/Admin/Profil', icon: <Settings size={24} />, label: 'Profil'}
+    {href: '/Admin/Profil', icon: <UserRoundPen size={24} />, label: 'Profil'}
 ]
 
 export default function AdminSidebar() {

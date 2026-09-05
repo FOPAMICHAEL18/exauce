@@ -43,7 +43,7 @@ const EditProductPage = async ({ params }: { params: Promise<{ id: string }> }) 
     return (
         <div className="space-y-6 px-20 py-4">
             {/* Formulaire d'édition */}
-            <AdminProductForm initialData={formattedProduct} categories={categories} />
+            <AdminProductForm categories={categories} productId={productId}/>
         </div>
     );
 }

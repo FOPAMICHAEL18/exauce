@@ -5,6 +5,7 @@ import { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
 import { MessageSquareText, Trash2, Edit, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { apiCall } from '@/app/lib/api'
+import { DeleteModal } from '../ui/Modal/DeleteModal'
 
 interface CategoriesDataProps {
     id: number
@@ -30,6 +31,7 @@ const AdminCategoryTable = ({currentPage, totalPages, categories} : AdminCategor
     const [isPending, startTransition] = useTransition()
     const [loadingPage, setLoadingPage] = useState<number | null>(null)
     const [deletingId, setDeletingId] = useState<number | null>(null)
+    const [categoryToDelete, setCategoryToDelete] = useState<{id: number, name: string} | null>(null)
 
     // Reset l'indicateur dès que la nouvelle page s'affiche
     useEffect(() => {
@@ -51,12 +53,21 @@ const AdminCategoryTable = ({currentPage, totalPages, categories} : AdminCategor
         })
     }
 
-    const handleDelete = async (categoryId: number) => {
-        if (!confirm('Voulez-vous vraiment supprimer cette categorie ?')) return
-        setDeletingId(categoryId)
+    const openDeleteModal = (id: number, name: string) => {
+        setCategoryToDelete({id , name})
+    }
+
+    const closeDeleteModal = () => {
+        setCategoryToDelete(null)
+    }
+
+    const confirmDelete = async () => {
+        if (!categoryToDelete) return
+        setDeletingId(categoryToDelete.id)
+        closeDeleteModal()
 
         try {
-            const response = await apiCall<any>(`/api/admin/categories/${categoryId}`, { method: 'DELETE' })
+            const response = await apiCall<any>(`/api/admin/categories/${categoryToDelete.id}`, { method: 'DELETE' })
             if (response.success) {
                 startTransition(() => {
                     router.refresh()
@@ -75,6 +86,10 @@ const AdminCategoryTable = ({currentPage, totalPages, categories} : AdminCategor
 
     return (
         <div className='space-y-4 relative'>
+            {/* Modale de Confirmation de Suppression */}
+            {categoryToDelete && (
+                <DeleteModal elementToDelete={categoryToDelete.name} closeDeleteModal={closeDeleteModal} confirmDelete={confirmDelete}  />
+            )}
             <div className='bg-white rounded-lg border border-gray-200 overflow-hidden relative flex flex-col py-16 px-10 gap-3'>
                 <h2 className='font-bold text-xl'>Categories existante</h2>
                 
@@ -88,15 +103,16 @@ const AdminCategoryTable = ({currentPage, totalPages, categories} : AdminCategor
                     </div>
                 )}
 
-                {/* Overlay immédiat au changement de page du a la suppression d'un produit*/}
-                {isPending !== isLoading  && (
-                    <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center z-30 transition-all">
-                        <div className="flex items-center gap-2 bg-[#0A1730] text-white px-4 py-2 rounded-lg text-xs font-medium shadow-lg">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>suppression de la categorie...</span>
-                        </div>
+                {/* Overlay pour mise à jour de données (suppression ou masquage) */}
+                {isPending && !isLoading && (
+                <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center z-30 transition-all">
+                    <div className="flex items-center gap-2 bg-[#0A1730] text-white px-4 py-2 rounded-lg text-xs font-medium shadow-lg">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Mise à jour en cours...</span>
                     </div>
+                </div>
                 )}
+
 
                 {categories.length === 0 ? (
                     <div className='p-8 text-center text-gray-400'>
@@ -129,10 +145,10 @@ const AdminCategoryTable = ({currentPage, totalPages, categories} : AdminCategor
                                         <td className='text-right px-4 py-3 whitespace-nowrap'>
                                             <div className="flex items-center justify-end gap-2">
                                                 <Link href={`/Admin/Categories/${category.id}/Edit`} className="p-1.5 text-gray-500 hover:text-blue-600">
-                                                    <Edit className="w-4 h-4" />
+                                                    <Edit className="w-4 h-4 hover:text-blue-600" />
                                                 </Link>
-                                                <button onClick={() => handleDelete(category.id)} disabled={deletingId === category.id} className="p-1.5 text-gray-500 hover:text-red-600">
-                                                    <Trash2 className="w-4 h-4" />
+                                                <button onClick={() => openDeleteModal(category.id, category.name)} disabled={deletingId === category.id} className="p-1.5 text-gray-500 hover:text-red-600">
+                                                    {deletingId === category.id ? <Loader2 className="w-4 h-4 animate-spin text-red-600" /> : <Trash2 className="w-4 h-4" />}
                                                 </button>
                                             </div>
                                         </td>

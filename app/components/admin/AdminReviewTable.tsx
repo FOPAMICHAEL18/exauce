@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useState, useTransition, useEffect } from 'react'
 import { Eye, EyeOff, Trash2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { apiCall } from '@/app/lib/api'
+import { DeleteModal } from '../ui/Modal/DeleteModal'
 
 interface ProductData {
   title: string
@@ -32,6 +33,7 @@ const AdminReviewTable = ({ reviews, totalPages, currentPage }: AdminReviewTable
   const [loadingPage, setLoadingPage] = useState<number | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [modifyId, setModifyId] = useState<number | null>(null)
+  const [reviewToDelete, setReviewToDelete] = useState<{id: number, author: string} | null>(null)
 
   useEffect(() => {
     setLoadingPage(null)
@@ -49,12 +51,21 @@ const AdminReviewTable = ({ reviews, totalPages, currentPage }: AdminReviewTable
     })
   }
 
-  const handleDelete = async (reviewId: number) => {
-    if (!confirm('Voulez-vous vraiment supprimer cet avis ?')) return
-    setDeletingId(reviewId)
+  const openDeleteModal = (id: number, author: string) => {
+        setReviewToDelete({id , author})
+    }
+
+    const closeDeleteModal = () => {
+        setReviewToDelete(null)
+    }
+
+  const confirmDelete = async () => {
+    if (!reviewToDelete) return
+    setDeletingId(reviewToDelete.id)
+    closeDeleteModal()
 
     try {
-      const response = await apiCall<{ success: boolean }>(`/api/admin/reviews/${reviewId}`, { method: 'DELETE' })
+      const response = await apiCall<{ success: boolean }>(`/api/admin/reviews/${reviewToDelete.id}`, { method: 'DELETE' })
       if (response.success) {
         startTransition(() => {
           router.refresh()
@@ -70,8 +81,6 @@ const AdminReviewTable = ({ reviews, totalPages, currentPage }: AdminReviewTable
   }
 
   const handleModify = async (review: ReviewData) => {
-    const actionText = review.status === 'published' ? 'masquer' : 'publier'
-    if (!confirm(`Voulez-vous vraiment ${actionText} cet avis ?`)) return
     
     setModifyId(review.id)
 
@@ -95,6 +104,10 @@ const AdminReviewTable = ({ reviews, totalPages, currentPage }: AdminReviewTable
 
   return (
     <div className='space-y-4 relative'>
+      {/* Modale de Confirmation de Suppression */}
+      {reviewToDelete && (
+        <DeleteModal elementToDelete={reviewToDelete.author} closeDeleteModal={closeDeleteModal} confirmDelete={confirmDelete}  />
+      )}
       <div className='bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm relative'>
         
         {/* Overlay pour chargement de page */}
@@ -176,7 +189,7 @@ const AdminReviewTable = ({ reviews, totalPages, currentPage }: AdminReviewTable
                         </button>
 
                         <button 
-                          onClick={() => handleDelete(review.id)} 
+                          onClick={() => openDeleteModal(review.id, review.author)} 
                           disabled={deletingId === review.id || modifyId === review.id} 
                           className="p-1.5 text-gray-500 hover:text-red-600 disabled:opacity-50"
                         >

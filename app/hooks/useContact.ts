@@ -25,7 +25,7 @@ const useContact = () => {
         longitude: null
     })
 
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 

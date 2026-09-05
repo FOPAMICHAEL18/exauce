@@ -4,72 +4,63 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiCall } from '@/app/lib/api';
 import { Upload, X, Plus, Loader2 } from 'lucide-react';
-
-// On définit le type des données d'un produit pour TypeScript.
-// Cela permet d'avoir l'autocomplétion et la vérification des types.
-interface ProductData {
-  id?: number;
-  title: string;
-  description: string;
-  price: number;
-  categoryId: number;
-  stockStatus: string;
-  images?: string[];
-  // On ajoute category pour l'affichage, mais il n'est pas obligatoire
-  // pour la mise à jour (Prisma utilisera categoryId).
-  category?: {
-    id: number;
-    name: string;
-  };
-}
+import { useProducts } from '@/app/hooks/useProduct';
 
 // On définit le type des catégories reçues en props.
 interface Category {
   id: number;
   name: string;
 }
-
-// On définit les props que le composant ProductForm va recevoir.
 interface AdminProductFormProps {
-  // initialData est optionnel car ce composant sera aussi utilisé
-  // pour la création (où il n'y a pas de données initiales).
-  initialData?: ProductData;
-  // categories est obligatoire car l'admin doit choisir une catégorie.
-  categories: Category[];
+  categories: Category[],
+  productId?: number
 }
 
-const AdminProductForm = ({ initialData, categories }: AdminProductFormProps) => {
+const AdminProductForm = ({categories, productId} : AdminProductFormProps) => {
   const router = useRouter();
+  const isEditing = Boolean(productId)
+  const { data, loading, error, success, updateProduct, createProduct, refresh } = useProducts();
 
-  // Si initialData existe, on est en mode "édition". Sinon, "création".
-  const isEditing = !!initialData;
 
-  const submitButtonText = isEditing ? 'Mettre à jour' : 'Créer le produit';
+  const submitButtonText = !isEditing ? 'Créer le produit' : 'Mettre à jour';
 
-  // Si initialData existe, on l'utilise pour pré-remplir les champs.
-  // Sinon, on met des valeurs par défaut (cas de la création).
-  const [title, setTitle] = useState(initialData?.title || '');
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [price, setPrice] = useState(initialData?.price?.toString() || '');
-  const [categoryId, setCategoryId] = useState(initialData?.categoryId?.toString() || '');
-  const [stockStatus, setStockStatus] = useState(initialData?.stockStatus || 'disponible');
-  const [images, setImages] = useState<string[]>(initialData?.images || []);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [stockStatus, setStockStatus] = useState('disponible');
+  const [images, setImages] = useState<string[]>([]);
 
   // isSubmitting : true quand le formulaire est en cours d'envoi.
   const [isSubmitting, setIsSubmitting] = useState(false);
   // error : message d'erreur à afficher en cas d'échec.
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   // success : true quand la mise à jour a réussi.
-  const [success, setSuccess] = useState(false);
+  const [localSuccess, setLocalSuccess] = useState(false);
 
-  // Si la mise à jour réussit (success === true), on cache le message
-  // de succès après 3 secondes.
+  useEffect((() => {
+    refresh(productId as number)
+  }), [productId])
+
   useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => setSuccess(false), 3000);
-      return () => clearTimeout(timer);
+    if (data) {
+      setTitle(data.title || '');
+      setDescription(data.description || '');
+      setPrice(data?.price?.toString() || '');
+      setCategoryId(data?.categoryId?.toString() || '');
+      setStockStatus(data.stockStatus || 'disponible');
+      setImages(data.images || []);
     }
-  }, [success]);
+  }, [data]);
+
+  useEffect(() => {
+      if (error) setLocalError(error);
+      if (success) {
+      setLocalSuccess(true);
+      setTimeout(() => setLocalSuccess(false), 3000);
+    }
+  }, [error, success]);
+
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -86,71 +77,84 @@ const AdminProductForm = ({ initialData, categories }: AdminProductFormProps) =>
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // On réinitialise les messages d'état.
-    setError(null);
-    setSuccess(false);
+    setLocalError(null);
+    setLocalSuccess(false);
     setIsSubmitting(true);
 
-    // On transforme les valeurs du formulaire en un objet à envoyer à l'API.
-    // Conversion du prix : on le transforme en nombre flottant (parseFloat).
-    // Conversion du categoryId : on le transforme en nombre entier (parseInt).
-    const productData = {
-      title: title.trim(),
-      description: description.trim(),
-      price: parseFloat(price),
-      categoryId: parseInt(categoryId, 10),
-      stockStatus: stockStatus,
-      images: images,
-    };
-
     try {
-      // On détermine l'URL et la méthode en fonction du mode.
-      // - Si édition : PUT /api/admin/products/{id}
-      // - Si création : POST /api/admin/products
-      const url = isEditing
-        ? `/api/admin/products/${initialData.id}`
-        : '/api/admin/products';
-      const method = isEditing ? 'PUT' : 'POST';
+      if (isEditing) {
+        const haveSameImage = (a: string[], b: string[]) : boolean => {
+          if (a.length !== b.length) return false
+          return a.every((val, index) => val === b[index])
+        }
+        const hasChange = title !== (data?.title || '') || description !== (data?.description || '') || price !== (data?.price?.toString() || '') || categoryId !== (data?.categoryId?.toString() || '') || stockStatus !== (data?.stockStatus || '') || !haveSameImage(images, (data?.images || []))
+        console.log(price)
+        console.log(data?.price?.toString())
+        console.log(price !== (data?.price?.toString() || ''))
+        console.log(hasChange)
+        if (!hasChange) {
+          setLocalError('Aucune modification detectee')
+          setIsSubmitting(false);
+          return
+        }
 
-      const response = await apiCall<any>(url, {
-        method: method,
-        body: JSON.stringify(productData),
-      });
+        // On transforme les valeurs du formulaire en un objet à envoyer à l'API.
+        // Conversion du prix : on le transforme en nombre flottant (parseFloat).
+        // Conversion du categoryId : on le transforme en nombre entier (parseInt).
+        const payload: Record<string, any> = {
+          id: productId,
+          title: title.trim(),
+          description: description.trim(),
+          price: parseFloat(price),
+          categoryId: parseInt(categoryId, 10),
+          stockStatus,
+          images,
+        };
 
-      if (!response.success) {
-        setError(response.message || 'Une erreur est survenue');
-        return;
+        await updateProduct(payload)
+      } else {
+        const payload: Record<string, any> = {
+          title: title.trim(),
+          description: description.trim(),
+          price: parseFloat(price),
+          categoryId: parseInt(categoryId, 10),
+          stockStatus,
+          images,
+        };
+
+        await createProduct(payload)
       }
-
-      setSuccess(true);
-
-      // Si c'est une création, on redirige vers la liste des produits après 1.5s.
-      if (!isEditing) {
-        setTimeout(() => {
-          router.push('/Admin/Products');
-        }, 1500);
-      }
-    } catch (error) {
-      setError('Une erreur inattendue est survenue');
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // Réinitialise l'état du bouton quoi qu'il arrive
     }
-  };
+  }
 
   const handleCancel = () => {
     router.push('/Admin/Products');
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6 px-20 py-4 animate-pulse">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <div className="lg:col-span-7 bg-gray-200 rounded-xl h-120"></div>
+          <div className="lg:col-span-5 bg-gray-200 rounded-xl  "></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="mx-auto space-y-4">
       {/* Messages d'erreur et de succès */}
-      {error && (
+      {localError && (
         <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
-          {error}
+          {localError}
         </div>
       )}
-      {success && (
+      {localSuccess && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-lg text-sm">
-          Produit {isEditing ? 'mis à jour' : 'créé'} avec succès !
+          Produit {!isEditing ? 'créé' : 'mis à jour'} avec succès !
         </div>
       )}
 
@@ -218,7 +222,7 @@ const AdminProductForm = ({ initialData, categories }: AdminProductFormProps) =>
 
           {/* Statut du stock (Toggle Switch lié à stockStatus) */}
           <div className="pt-2">
-            <label className="text-xs font-semibold text-gray-700 block mb-2">Statut de publication</label>
+            <label className="text-xs font-semibold text-gray-700 block mb-2">Statut du stock</label>
             <div
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => setStockStatus(stockStatus === 'disponible' ? 'indisponible' : 'disponible')}

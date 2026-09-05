@@ -84,11 +84,7 @@ const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promi
             }
         })
 
-        return Response.json({
-            success: true,
-            message: 'Produit modifier avec succes',
-            product: updateProduct
-        })
+        return Response.json(updateProduct)
     }
     catch(error) {
         //On verifie si c'est une erreur javascript
@@ -170,4 +166,48 @@ const DELETE = async (request:NextRequest, {params}: {params: {id: string}}): Pr
     }
 }
 
-export {PUT, DELETE}
+//afficher les produits 
+const GET = async (request:NextRequest, {params}: {params: {id: string}}): Promise<Response> => {
+    try {
+        //Recuperer l'admin depuis la propriete ajoutee par le middleware 
+        const adminHeader = request.headers.get('x-admin-data')
+        const admin = adminHeader ? JSON.parse(adminHeader) : null
+        if (!admin) {
+            return Response.json({
+                success: false,
+                message: "Non autoriser"
+            }, {status: 401}) // non autoriser
+        }
+
+        //Recuperation de la l'id du produit 
+        const {id} = params
+        const productId = parseInt(id, 10)
+
+        const products = await prisma.product.findUnique({
+            where: {id: productId},
+            include: {
+                category: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
+            },
+        })
+        return Response.json(products)
+    }
+    catch(error) {
+        //On verifie si c'est une erreur javascript
+        if (error instanceof Error) {
+            console.log('Erreur GET :', error.message)
+        }
+        else {
+            console.log('Erreur inconnu GET', error)
+        }
+
+        return new Response('Erreur serveur', {status: 500})
+        
+    }
+}
+
+export {PUT, DELETE, GET}
