@@ -4,6 +4,7 @@ import ProductHighlight from "../components/public/ProductHighlight"
 import CategoriesShowcase from "../components/public/CategoriesShowcase"
 import TrustSection from "../components/public/TrustSection"
 import HowItWorks from "../components/public/HowItWorks"
+import Testimonials from "../components/public/Testimonials"
 
 
 export default async function Home() {
@@ -56,6 +57,7 @@ export default async function Home() {
       <CategoriesShowcase categories={categories} />
       <TrustSection />
       <HowItWorks />
+      <Testimonials testimonials={testimonials} />
     </main>
   );
 }

@@ -23,12 +23,12 @@ const Header = () => {
                 </Link>
                 <nav className="hidden md:flex gap-6">
                     {navItems.map((item, index) => (
-                        <Navlink key={index} href={item.href} exact={false} activeClassName="border-b-3 border-[#0A1730] " className="text-gray-600 hover:border-b-3 hover:border-[#0A1730] p-1 ">
+                        <Navlink key={index} href={item.href} exact={false} activeClassName="text-[#0A1730] font-semibold after:w-full " className="relative py-2 text-gray-600 hover:text-[#0A1730] after:absolute after:bottom-0 after:left-0 after:h-0.75 after:w-0 after:bg-[#0A1730] after:rounded-full hover:after:w-full after:transition-all after:duration-300 after:ease-in-out">
                             {item.label}
                         </Navlink>
                     ))}
                 </nav>
-                <Link href="Admin/Login" className="hidden md:block  bg-[#0A1730] text-white px-4 py-2 rounded hover:opacity-80 transition-colors">
+                <Link href="/Admin/Login" className="hidden md:block  bg-[#0A1730] text-white px-4 py-2 rounded hover:opacity-80 transition-colors">
                     <span className="text-white">Espace vendeur</span>
                 </Link>
                 <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
