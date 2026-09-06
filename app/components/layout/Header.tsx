@@ -9,10 +9,10 @@ const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const navItems = [
         { href: '/', label: 'Accueil' },
-        { href: '/catalogue', label: 'Catalogue' },
-        { href: '/comment-ca-marche', label: 'Comment ça marche' },
-        { href: '/avis-clients', label: 'Avis clients' },
-        { href: '/a-propos', label: 'À propos' },
+        { href: '/Catalogue', label: 'Catalogue' },
+        { href: '/Comment-ca-marche', label: 'Comment ça marche' },
+        { href: '/Avis-clients', label: 'Avis clients' },
+        { href: '/A-propos', label: 'À propos' },
     ]
 
     return (

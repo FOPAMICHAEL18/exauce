@@ -28,11 +28,11 @@ const Footer = async () => {
                     <div>
                         <h4 className="font-semibold mb-4">Navigation</h4>
                         <ul className="space-y-2 text-gray-400 text-sm">
-                            <li><Link href="/">Accueil</Link></li>
-                            <li><Link href="/catalogue">Catalogue</Link></li>
-                            <li><Link href="/comment-ca-marche">Comment ça marche</Link></li>
-                            <li><Link href="/avis-clients">Avis clients</Link></li>
-                            <li><Link href="/a-propos">À propos</Link></li>
+                            <li><Link href="/"><span className="flex items-center justify-start hover:text-white transition-colors">Accueil</span></Link></li>
+                            <li><Link href="/catalogue"><span className="flex items-center justify-start hover:text-white transition-colors">Catalogue</span></Link></li>
+                            <li><Link href="/comment-ca-marche"><span className="flex items-center justify-start hover:text-white transition-colors">Comment ça marche</span></Link></li>
+                            <li><Link href="/avis-clients"><span className="flex items-center justify-start hover:text-white transition-colors">Avis clients</span></Link></li>
+                            <li><Link href="/a-propos"><span className="flex items-center justify-start hover:text-white transition-colors">À propos</span></Link></li>
                         </ul>
                     </div>
                     <div>
@@ -43,7 +43,7 @@ const Footer = async () => {
                                     <Link
                                         href={`/Catalogue?categorie=${category.slug}`}
                                     >
-                                        {category.name}
+                                        <span className="hover:text-white transition-colors">{category.name}</span>
                                     </Link>
                                 </li>
                             ))}
@@ -52,24 +52,29 @@ const Footer = async () => {
                     <div>
                         <h4 className="font-semibold mb-4">Contact</h4>
                         <ul className="space-y-3 text-gray-400 text-sm">
-                            <li className="flex items-center justify-start">
-                                <MapPinHouse className="mr-2 mt-1" size={20} />
-                                {contactInfo?.address}
-                            </li>
-                            <li>
-                                {/* Quand un utilisateur clique sur un lien tel:, son téléphone (ou ordinateur) ouvre l'application téléphone avec le numéro pré-rempli. */}
-                                <a href={`tel:${contactInfo?.phone}`} className="flex items-center justify-start"> 
-                                    <Phone className="mr-2" size={20} />
-                                    {contactInfo?.phone}
-                                </a>
-                            </li>
-                            <li>
-                                {/* Quand un utilisateur clique sur un lien mailto:, son navigateur ouvre le client email par défaut (Gmail, Outlook, Apple Mail, etc.) avec l'adresse pré-remplie dans le champ "Destinataire". */}
-                                <a href={`mailto:${contactInfo?.email}`} className="flex items-center justify-start"> 
-                                    <Mail className="mr-2" size={20} />
-                                    {contactInfo?.email}
-                                </a>
-                            </li>
+                            {contactInfo?.address && (
+                                <li className="flex items-start justify-start">
+                                    <MapPinHouse className="mr-2 mt-0.5 shrink-0 text-[#1B5E38]" size={18} />
+                                    <span>{contactInfo.address}</span>
+                                </li>
+                            )}
+                            {contactInfo?.phone && (
+                                <li>
+                                    <a href={`tel:${contactInfo.phone}`} className="flex items-center justify-start hover:text-white transition-colors"> 
+                                        <Phone className="mr-2 shrink-0 text-[#1B5E38] " size={18} />
+                                        <span className="hover:text-white">{contactInfo.phone}</span>
+                                    </a>
+                                </li>
+                            )}
+                            {contactInfo?.email && (
+                                <li>
+                                    <a href={`mailto:${contactInfo.email}`} className="flex items-center justify-start hover:text-white transition-colors"> 
+                                        <Mail className="mr-2 shrink-0 text-[#1B5E38]" size={18} />
+                                        {/* break-all : Coupe le mot n'importe où (idéal pour les liens très longs et emails dans des espaces étroits). */}
+                                        <span className="break-all hover:text-white">{contactInfo.email}</span>
+                                    </a>
+                                </li>
+                            )}
                         </ul>
                     </div>
                 </div>
