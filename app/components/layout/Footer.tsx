@@ -6,13 +6,13 @@ import { MapPinHouse, Phone, Mail } from 'lucide-react'
 const Footer = async () => {
 
     const [categories, contactInfo] = await Promise.all([
-        await prisma.category.findMany({
+        prisma.category.findMany({
             orderBy: {
                 name: 'asc' , // Trie par ordre alphabetique
             },
             select: { id: true, name: true, slug: true }
         }), 
-        await prisma.contact.findFirst()
+        prisma.contact.findFirst()
     ]) // On attend que les deux promesses soient résolues
 
     return (
@@ -41,7 +41,7 @@ const Footer = async () => {
                             {categories.map((category) => (
                                 <li key={category.id}>
                                     <Link
-                                        href={`/categorie/${category.slug}`}
+                                        href={`/Catalogue?categorie=${category.slug}`}
                                     >
                                         {category.name}
                                     </Link>
