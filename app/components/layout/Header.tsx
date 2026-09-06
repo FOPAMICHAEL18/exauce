@@ -23,7 +23,7 @@ const Header = () => {
                 </Link>
                 <nav className="hidden md:flex gap-6">
                     {navItems.map((item, index) => (
-                        <Navlink key={index} href={item.href} exact={false} activeClassName="border-b-3 border-[#0A1730] " className="text-gray-600 hover:border-b-3 hover:border-[#0A1730] p-1">
+                        <Navlink key={index} href={item.href} exact={false} activeClassName="border-b-3 border-[#0A1730] " className="text-gray-600 hover:border-b-3 hover:border-[#0A1730] p-1 ">
                             {item.label}
                         </Navlink>
                     ))}
