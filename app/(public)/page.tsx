@@ -2,6 +2,7 @@ import { prisma } from "@/app/lib/prisma"
 import HeroSection from "../components/public/HeroSection"
 import ProductHighlight from "../components/public/ProductHighlight"
 import CategoriesShowcase from "../components/public/CategoriesShowcase"
+import TrustSection from "../components/public/TrustSection"
 
 
 export default async function Home() {
@@ -39,6 +40,7 @@ export default async function Home() {
       <HeroSection />
       <ProductHighlight products={featureProducts} />
       <CategoriesShowcase categories={categories} />
+      <TrustSection />
     </main>
   );
 }
