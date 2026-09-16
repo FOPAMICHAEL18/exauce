@@ -36,7 +36,10 @@ export default function AdminLayout({children}: {children: React.ReactNode}) {
     //On affiche rien sur lsi l'utilisateur n'est pas authentifier
     if (!isAuthenticated) {
         console.log(isAuthenticated)
-        return null
+        if (typeof window !== 'undefined') {
+            window.location.href = '/Admin/Login';
+        }
+        return null; // On retourne null le temps de la redirection
     }
 
     //Le layout complet 

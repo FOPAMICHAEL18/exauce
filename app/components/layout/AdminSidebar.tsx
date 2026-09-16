@@ -20,7 +20,7 @@ export default function AdminSidebar() {
             <nav className="flex-1 space-y-1 pt-4">
                 {
                     menuItems.map((item, index) => (
-                        <Navlink href={item.href} key={index} activeClassName="text-white border-r-3 border-emerald-800 bg-white/10" className="flex items-center gap-3 px-4 py-2  transition-opacity text-gray-800 hover:bg-white/10" exact={false}>
+                        <Navlink href={item.href} key={index} activeClassName="text-white border-r-3 border-emerald-800 bg-white/10" className="flex items-center gap-3 px-4 py-2  transition-opacity text-white hover:bg-white/10" exact={false}>
                             {item.icon}
                             {item.label}
                         </Navlink>
