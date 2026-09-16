@@ -11,8 +11,8 @@ const Header = () => {
         { href: '/', label: 'Accueil' },
         { href: '/Catalogue', label: 'Catalogue' },
         { href: '/Comment-ca-marche', label: 'Comment ça marche' },
-        { href: '/Avis-clients', label: 'Avis clients' },
         { href: '/A-propos', label: 'À propos' },
+        { href: '/Contact', label: 'Contact' }
     ]
 
     return (

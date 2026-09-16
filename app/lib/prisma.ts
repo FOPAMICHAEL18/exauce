@@ -1,3 +1,5 @@
+//Isoler Prisma côté serveur ce aui va lancer une erreur si je l'utilise dans un serveur component
+import 'server-only'
 //Ce que ça fait : Importe le client Prisma optimisé pour les environnements Serverless / Edge (comme Cloudflare Workers ou Vercel Edge).
 import { PrismaClient } from "@prisma/client/edge";//edge doit etre ajouter pour que prisma puisse s'adapter a next 
 //Ce que ça fait : Importe l'adaptateur Prisma qui permet d'utiliser le driver de base de données PostgreSQL JS natif (pg) à la place du moteur Rust binaire standard de Prisma.
