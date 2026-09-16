@@ -50,32 +50,25 @@ const POST = async (request: NextRequest, {params}: {params: {slug: string}}) : 
             }
         })
 
-        if (!existingView) {
-            //Si la vue n'existe pas encore on execute une transaction
-            //Une transaction permet d'executer plusieurs requetes de manieres atomique
-            //Soit toutes reussissent
-            //Soit aucune ne s'applique (si une echoue tout est annule)
-            await prisma.$transaction([
-                //Requete 1 : creer un enregistrement dans la table "view"
-                //On y stocke le sessionId et le productId 
-                prisma.view.create({
-                    data: {
-                        sessionId: sessionId,
-                        productId: product.id
-                    }
-                }),
-                //Requete 2 : Mettre a jour le compteur "views" du produit 
-                //On incremente de 1 le champ "views"
-                prisma.product.update({
-                    where: {id: product.id},
-                    data: {
-                        views: {
-                            increment: 1
-                        }
-                    }
-                })
-            ])
+        // Si la vue existe déjà, on ne fait rien
+        if (existingView) {
+        return NextResponse.json({ success: true, alreadyViewed: true });
         }
+
+        // Sinon, on enregistre la vue (sans transaction)
+        // On crée l'enregistrement de la vue
+        await prisma.view.create({
+        data: {
+            sessionId,
+            productId: product.id,
+        },
+        });
+
+        // Puis on incrémente le compteur de vues du produit
+        await prisma.product.update({
+        where: { id: product.id },
+        data: { views: { increment: 1 } },
+        })
 
         return NextResponse.json({success: true})
     }
@@ -86,6 +79,12 @@ const POST = async (request: NextRequest, {params}: {params: {slug: string}}) : 
         }
         else {
             console.log('Erreur inconnu lors du tracking des vues', error)
+        }
+
+        // Si l'erreur est une violation de contrainte unique (probablement une course),
+        // on considère que la vue a déjà été enregistrée (retour succès)
+        if (error instanceof Error && error.message.includes('Unique constraint failed')) {
+            return NextResponse.json({ success: true, alreadyViewed: true });
         }
 
         return NextResponse.json({error: 'Erreur interne du serveur'}, {status: 500})

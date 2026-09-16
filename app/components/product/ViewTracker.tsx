@@ -7,9 +7,12 @@ import { useEffect } from "react"
 const ViewTracker = ({slug}: {slug : string}) => {
 
     useEffect(() => {
-        fetch('/api/Product/${slug}/view', {method: 'POST'}) 
+        // On envoie une requête POST à l'API pour incrémenter le compteur de vues
+        // L'API est : /api/products/[slug]/views
+        fetch(`/api/products/${slug}/views`, {method: 'POST'}).catch(err => console.error('Erreur tracking vue :', err))
     }, [slug])  
 
+    // Le composant ne retourne rien (null) car il est purement fonctionnel
     return null
 }
 

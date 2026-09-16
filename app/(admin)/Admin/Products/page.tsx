@@ -12,7 +12,7 @@ interface ProductsProps {
     }>
 }
 
-const PRODUCTS_PER_PAGE = 8 //Définit une constante. On affichera au maximum 8 produits par page.
+export const PRODUCTS_PER_PAGE = 8 //Définit une constante. On affichera au maximum 8 produits par page.
 
 const Products = async ({ searchParams }: ProductsProps) => {
     const resolvedParams = await searchParams  //Dans Next.js 15, searchParams est une promesse (Promise) contenant les valeurs de l'URL (ex: ?search=clavier&page=2).

@@ -9,7 +9,7 @@ interface Product {
   price: number;
   slug: string;
   category: { name: string };
-  images?: { url: string }[];
+  image?: { url: string }[];
 }
 
 interface ProductHighlightProps {
@@ -40,9 +40,9 @@ const ProductHighlight = ({products} : ProductHighlightProps) => {
                         >
                             {/* 1. Zone Image : Hauteur strictement bloquée à 200px */}
                             <div className="relative w-full h-50 shrink-0 bg-[#EAEFF2] flex items-center justify-center overflow-hidden">
-                                {product.images && product.images.length > 0 ? (
+                                {product.image && product.image.length > 0 ? (
                                 <Image
-                                    src={product.images[0].url}
+                                    src={product.image[0].url}
                                     alt={product.title}
                                     fill
                                     className="object-cover group-hover:scale-105 transition-transform duration-300"

@@ -1,4 +1,5 @@
 "use client"
+import StepCard from "../ui/Card/StepCard";
 
 interface Step {
   stepNumber: number;
@@ -6,21 +7,21 @@ interface Step {
   description: string;
 }
 
-const steps: Step[] = [
+export const steps: Step[] = [
   {
     stepNumber: 1,
     title: "Parcourez le catalogue",
-    description: "Filtrez par catégorie, arrivage de Chine ou de Turquie, et prix.",
+    description: "Filtrez par catégorie, prix ou arrivages (Chine & Turquie) pour trouver vos articles préférés.",
   },
   {
     stepNumber: 2,
     title: "Consultez la fiche produit",
-    description: "Découvrez les détails, dimensions, matériaux et stock disponible.",
+    description: "Découvrez les photos réelles, les détails techniques, le prix clair en FCFA et la disponibilité en stock.",
   },
   {
     stepNumber: 3,
-    title: "Commandez ou contactez-nous",
-    description: "Passez commande directement ou échangez sur WhatsApp pour réserver.",
+    title: "contactez-nous",
+    description: "Cliquez sur le bouton WhatsApp ou téléphone pour échanger directement, réserver ou poser vos questions.",
   },
 ]
 
@@ -38,20 +39,7 @@ const HowItWorks = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {steps.map((step) => (
-                        <div
-                        key={step.stepNumber}
-                        className="bg-white p-6 rounded-lg border border-gray-200/80 shadow-sm flex flex-col items-start transition-shadow hover:shadow-md"
-                        >
-                            <div className="w-9 h-9 rounded-full bg-[#0A1730] text-white font-bold text-sm flex items-center justify-center mb-6 shrink-0">
-                                {step.stepNumber}
-                            </div>
-                            <h3 className="text-base font-bold text-[#0A1730] mb-2">
-                                {step.title}
-                            </h3>
-                            <p className="text-sm text-gray-500 leading-relaxed">
-                                {step.description}
-                            </p>
-                        </div>
+                        <StepCard step={step} />
                     ))}
                 </div>
             </div>

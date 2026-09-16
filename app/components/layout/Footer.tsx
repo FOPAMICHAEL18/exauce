@@ -1,19 +1,12 @@
 import Link from "next/link"
 import { prisma } from "@/app/lib/prisma"
 import { MapPinHouse, Phone, Mail } from 'lucide-react'
+import { getCatCont } from "@/app/lib/data"
 
 
 const Footer = async () => {
 
-    const [categories, contactInfo] = await Promise.all([
-        prisma.category.findMany({
-            orderBy: {
-                name: 'asc' , // Trie par ordre alphabetique
-            },
-            select: { id: true, name: true, slug: true }
-        }), 
-        prisma.contact.findFirst()
-    ]) // On attend que les deux promesses soient résolues
+    const [categories, contactInfo] = await getCatCont()
 
     return (
         <footer className="bg-[#0A1730] pt-12 pb-6 text-white">
@@ -29,10 +22,10 @@ const Footer = async () => {
                         <h4 className="font-semibold mb-4">Navigation</h4>
                         <ul className="space-y-2 text-gray-400 text-sm">
                             <li><Link href="/"><span className="flex items-center justify-start hover:text-white transition-colors">Accueil</span></Link></li>
-                            <li><Link href="/catalogue"><span className="flex items-center justify-start hover:text-white transition-colors">Catalogue</span></Link></li>
-                            <li><Link href="/comment-ca-marche"><span className="flex items-center justify-start hover:text-white transition-colors">Comment ça marche</span></Link></li>
-                            <li><Link href="/avis-clients"><span className="flex items-center justify-start hover:text-white transition-colors">Avis clients</span></Link></li>
-                            <li><Link href="/a-propos"><span className="flex items-center justify-start hover:text-white transition-colors">À propos</span></Link></li>
+                            <li><Link href="/Catalogue"><span className="flex items-center justify-start hover:text-white transition-colors">Catalogue</span></Link></li>
+                            <li><Link href="/Comment-ca-marche"><span className="flex items-center justify-start hover:text-white transition-colors">Comment ça marche</span></Link></li>
+                            <li><Link href="/Avis-clients"><span className="flex items-center justify-start hover:text-white transition-colors">Avis clients</span></Link></li>
+                            <li><Link href="/A-propos"><span className="flex items-center justify-start hover:text-white transition-colors">À propos</span></Link></li>
                         </ul>
                     </div>
                     <div>
@@ -55,7 +48,7 @@ const Footer = async () => {
                             {contactInfo?.address && (
                                 <li className="flex items-start justify-start">
                                     <MapPinHouse className="mr-2 mt-0.5 shrink-0 text-[#1B5E38]" size={18} />
-                                    <span>{contactInfo.address}</span>
+                                    <span className="hover:text-white">{contactInfo.address}</span>
                                 </li>
                             )}
                             {contactInfo?.phone && (

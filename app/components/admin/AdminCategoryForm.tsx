@@ -6,8 +6,8 @@ import { apiCall } from '@/app/lib/api';
 import { Upload, X, Plus, Loader2, Form } from 'lucide-react';
 
 interface InitialData {
-    id?: number
-    name: string
+  id?: number
+  name: string
 }
 
 interface AdminCategoryFormProps {

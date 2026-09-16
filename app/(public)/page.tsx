@@ -18,7 +18,8 @@ export default async function Home() {
         stockStatus: "disponible",
       },
       include: {
-        category: true
+        category: true,
+        image: true,
       }
     }),
     prisma.category.findMany({
@@ -51,13 +52,13 @@ export default async function Home() {
   ))
 
   return (
-    <main>
+    <div>
       <HeroSection />
       <ProductHighlight products={featureProducts} />
       <CategoriesShowcase categories={categories} />
       <TrustSection />
       <HowItWorks />
       <Testimonials testimonials={testimonials} />
-    </main>
+    </div>
   );
 }

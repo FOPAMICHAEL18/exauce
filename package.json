@@ -25,6 +25,9 @@
     "@cloudflare/vite-plugin": "latest",
     "@faker-js/faker": "^10.6.0",
     "@tailwindcss/postcss": "latest",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/leaflet": "^1.9.22",
@@ -35,12 +38,15 @@
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "latest",
     "@vitejs/plugin-rsc": "latest",
+    "@vitest/coverage-v8": "^5.0.0",
     "dotenv": "^17.4.2",
+    "jsdom": "^30.0.1",
     "miniflare": "^5.20260820.0-alpha",
     "prisma": "^7.9.1",
     "tailwindcss": "latest",
     "typescript": "latest",
     "vite": "latest",
+    "vitest": "^5.0.0",
     "workerd": "^1.20260825.1",
     "wrangler": "^4.125.0"
   },
@@ -51,7 +57,11 @@
     "start": "wrangler dev --config dist/server/wrangler.json",
     "deploy": "vinext-cloudflare deploy --config dist/server/wrangler.json",
     "preview": "npm run build && npm run start --",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "prisma": {
     "seed": "tsx --env-file=.dev.vars prisma/seed.ts"
