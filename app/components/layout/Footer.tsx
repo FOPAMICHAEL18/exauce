@@ -24,8 +24,8 @@ const Footer = async () => {
                             <li><Link href="/"><span className="flex items-center justify-start hover:text-white transition-colors">Accueil</span></Link></li>
                             <li><Link href="/Catalogue"><span className="flex items-center justify-start hover:text-white transition-colors">Catalogue</span></Link></li>
                             <li><Link href="/Comment-ca-marche"><span className="flex items-center justify-start hover:text-white transition-colors">Comment ça marche</span></Link></li>
-                            <li><Link href="/Avis-clients"><span className="flex items-center justify-start hover:text-white transition-colors">Avis clients</span></Link></li>
                             <li><Link href="/A-propos"><span className="flex items-center justify-start hover:text-white transition-colors">À propos</span></Link></li>
+                            <li><Link href="/Contact"><span className="flex items-center justify-start hover:text-white transition-colors">Contact</span></Link></li>
                         </ul>
                     </div>
                     <div>
@@ -53,7 +53,7 @@ const Footer = async () => {
                             )}
                             {contactInfo?.phone && (
                                 <li>
-                                    <a href={`tel:${contactInfo.phone}`} className="flex items-center justify-start hover:text-white transition-colors"> 
+                                    <a href={`tel:${contactInfo.phone.replace(/[^0-9+]/g, '')}`} className="flex items-center justify-start hover:text-white transition-colors"> 
                                         <Phone className="mr-2 shrink-0 text-[#1B5E38] " size={18} />
                                         <span className="hover:text-white">{contactInfo.phone}</span>
                                     </a>
