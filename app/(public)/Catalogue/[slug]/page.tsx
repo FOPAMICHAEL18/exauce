@@ -5,6 +5,8 @@ import ProductImageGallery from '@/app/components/product/ProductImageGallery'
 import ReviewForm from '@/app/components/review/ReviewForm'
 import Breadcrumb from '@/app/components/ui/Breadcrumb'
 import ViewTracker from '@/app/components/product/ViewTracker'
+import { formatPrice } from '@/app/lib/utils'
+import { formatDate } from '@/app/lib/utils'
 
 interface ProductDetailPageProps {
     params: Promise<{ slug: string }>
@@ -33,7 +35,6 @@ const ProductDetailPage = async ({ params }: ProductDetailPageProps) => {
         notFound()
     }
 
-    const formattedPrice = Number(product.price).toLocaleString('fr-FR')
     const whatsappMessage = encodeURIComponent(`Bonjour, je suis intéressé par le produit "${product.title}" sur votre site.`)
 
     return (
@@ -55,7 +56,7 @@ const ProductDetailPage = async ({ params }: ProductDetailPageProps) => {
                             <span className="text-xs text-gray-500 font-medium">({product.review.length} avis)</span>
                         </div>
                         <div className="flex items-baseline gap-3">
-                            <span className="text-3xl font-bold text-[#0A1730]">{formattedPrice} FCFA</span>
+                            <span className="text-3xl font-bold text-[#0A1730]">{formatPrice(Number(product.price))}</span>
                         </div>
                         <p className="text-gray-600 text-sm leading-relaxed">
                             {product.description || "Aucune description fournie pour ce produit."}
@@ -101,11 +102,7 @@ const ProductDetailPage = async ({ params }: ProductDetailPageProps) => {
                                 <div className="flex justify-between items-center">
                                     <span className="font-semibold text-sm text-[#0A1730]">{review.author}</span>
                                     <span className="text-xs text-gray-400">
-                                        {new Date(review.createdAt).toLocaleDateString('fr-FR', {
-                                            day: 'numeric',
-                                            month: 'short',
-                                            year: 'numeric'
-                                        })}
+                                        {formatDate(review.createdAt)}
                                     </span>
                                 </div>
                                 <div className="flex text-amber-400">

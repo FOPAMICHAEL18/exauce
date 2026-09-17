@@ -1,6 +1,7 @@
 //Version ameliorer de request  permetant de renvoyer une reponse et de modifier une requete avant qu'elle n'arrive a la destination finale
 import {NextRequest, NextResponse} from 'next/server'
-import { prisma } from "@/app/lib/prisma"; 
+import { prisma } from "@/app/lib/prisma"
+import { generateSlug } from '@/app/lib/utils'
 
 const POST = async (request: NextRequest): Promise<Response> => {
     try{
@@ -44,7 +45,7 @@ const POST = async (request: NextRequest): Promise<Response> => {
         }
 
         //Transformation du titre en format adapter pour le slug  
-        const baseSlug = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g, '') //Enleve tout les accents et remplace les espaces vides pas les tiret (-) et supprime tout ce qui n'est pas lettre, chiffre ou tiret
+        const baseSlug = generateSlug(title) //Enleve tout les accents et remplace les espaces vides pas les tiret (-) et supprime tout ce qui n'est pas lettre, chiffre ou tiret
 
         //Creation du produit 
         const product = await prisma.product.create({

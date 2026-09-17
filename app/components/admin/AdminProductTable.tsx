@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Package, Trash2, Edit, ChevronLeft, ChevronRight, Loader2, AlertTriangle, X } from 'lucide-react'
 import { DeleteModal } from '../ui/Modal/DeleteModal'
 import { apiCall } from '@/app/lib/api'
+import { formatPrice } from '@/app/lib/utils'
 
 interface AdminProductTableProps {
     products: {
@@ -153,7 +154,7 @@ const AdminProductTable = ({
                                         </td>
                                         <td className='text-gray-600 px-4 py-3'>{product.category?.name || 'Sans catégorie'}</td>
                                         <td className='font-medium text-gray-900 px-4 py-3 whitespace-nowrap'>
-                                            {Number(product.price).toLocaleString('fr-FR')} FCFA
+                                            {formatPrice(Number(product.price))}
                                         </td>
                                         <td className='text-center px-4 py-3 whitespace-nowrap'>
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

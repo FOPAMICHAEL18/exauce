@@ -1,0 +1,48 @@
+// Transforme un titre en "slug" (URL-friendly)
+// Ex: "Tapis Persan Rouge" → "tapis-persan-rouge"
+const generateSlug = (text: string): string => {
+  return text
+    // toLowerCase() : passe tout en minuscules
+    .toLowerCase()
+
+    // normalize('NFD') : sépare les caractères accentués
+    // Ex: "é" devient "e" + accent combiné
+    .normalize('NFD')
+
+    // replace(/[\u0300-\u036f]/g, '') : supprime les accents
+    // La regex capture les accents (codes Unicode 0300 à 036F)
+    .replace(/[\u0300-\u036f]/g, '')
+
+    // replace(/\s+/g, '-') : remplace les espaces par des tirets
+    // \s+ = un ou plusieurs espaces
+    .replace(/\s+/g, '-')
+
+    // replace(/[^a-z0-9-]/g, '') : supprime tout sauf lettres, chiffres et tirets
+    // [^...] = tout sauf
+    .replace(/[^a-z0-9-]/g, '')
+
+    // Remplace PLUSIEURS tirets consécutifs par UN SEUL
+    .replace(/-+/g, '-')
+
+    // Supprime les tirets en début et fin de chaîne
+    .replace(/^-+|-+$/g, '');
+}
+
+// Formate un prix en FCFA
+// Ex: 240000 → "240000 FCFA"
+const formatPrice = (price: number): string => {
+  // toFixed(0) : arrondit à l'entier (0 décimales)
+  return `${price.toFixed(0)} FCFA`;
+}
+
+// Formate une date en français
+// Ex: new Date('2026-09-16') → "16 septembre 2026"
+const formatDate = (date: Date): string => {
+  return new Date(date).toLocaleDateString('fr-FR', {
+    day: 'numeric',    // Jour en chiffres (16)
+    month: 'long',     // Mois en toutes lettres (septembre)
+    year: 'numeric',   // Année en chiffres (2026)
+  });
+}
+
+export {generateSlug, formatDate, formatPrice}

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { formatPrice } from '@/app/lib/utils'
 
 interface Product {
   id: number;
@@ -67,7 +68,7 @@ const ProductHighlight = ({products} : ProductHighlightProps) => {
 
                                 <div className="mt-3">
                                 <span className="text-lg font-bold text-[#0A1730] block">
-                                    {product.price.toLocaleString("fr-FR")} FCFA
+                                    {formatPrice(product.price)} 
                                 </span>
                                 </div>
                             </div>

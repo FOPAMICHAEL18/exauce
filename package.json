@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "latest",
+    "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.6.0",
     "@playwright/test": "^1.63.0",
     "@secretlint/quick-start": "^13.0.5",
@@ -32,6 +33,7 @@
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
     "@types/bcryptjs": "^2.4.6",
+    "@types/eslint__js": "^8.42.3",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^26.2.0",
@@ -43,6 +45,7 @@
     "@vitejs/plugin-rsc": "latest",
     "@vitest/coverage-v8": "^5.0.1",
     "dotenv": "^17.4.2",
+    "eslint": "^10.10.0",
     "husky": "^9.1.7",
     "jsdom": "^30.0.1",
     "lint-staged": "^17.5.1",
@@ -68,14 +71,15 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "prepare": "prisma generate && husky"
+    "prepare": "prisma generate && husky",
+    "lint": "eslint ."
   },
   "lint-staged": {
     "*": [
       "npx secretlint"
     ],
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
+      "npx eslint --fix",
       "npx vitest related --run --bail"
     ]
   },

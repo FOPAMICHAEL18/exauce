@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect, useTransition } from 'react'
+import { formatPrice } from '@/app/lib/utils'
 
 interface Category {
     id: number
@@ -83,7 +84,7 @@ const ProductFilter = ({ categories }: ProductFiltersProps) => {
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-2 font-medium">
                     <span>0 FCFA</span>
-                    <span>{maxPrice.toLocaleString('fr-FR')} FCFA</span>
+                    <span>{formatPrice(maxPrice)}</span>
                 </div>
             </div>
             <div>

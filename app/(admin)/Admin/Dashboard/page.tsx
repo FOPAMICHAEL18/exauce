@@ -1,7 +1,7 @@
-import { prisma } from "@/app/lib/prisma"; 
-import StatCard from "@/app/components/ui/Card/statCard";
-import { AdminRecentReview } from "@/app/components/admin/AdminRecentReview";
-import { AdminTopProduct } from "@/app/components/admin/AdminTopProduct";
+import { prisma } from "@/app/lib/prisma"
+import StatCard from "@/app/components/ui/Card/statCard"
+import { AdminRecentReview } from "@/app/components/admin/AdminRecentReview"
+import { AdminTopProduct } from "@/app/components/admin/AdminTopProduct"
 
 const Dashboard = async () => {
     //On compte les produits dontle stockStatus est disponible

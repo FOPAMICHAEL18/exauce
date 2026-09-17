@@ -89,7 +89,7 @@ export default defineConfig({
   // Alias : permet d'utiliser @/ au lieu de chemins relatifs
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './app'),
+      '@': path.resolve(import.meta.dirname, './app'),
     },
   },
 })

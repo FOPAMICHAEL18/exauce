@@ -14,18 +14,14 @@
 // const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 // const adapter = new PrismaNeon(pool as any);
 // const prisma = new PrismaClient({ adapter })
-import dotenv from "dotenv";
-dotenv.config({ path: ".dev.vars" });
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import dotenv from "dotenv"
+dotenv.config({ path: ".dev.vars" })
 import {faker} from '@faker-js/faker'
-import { Pool } from "pg";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs"
+import { prisma } from "@/app/lib/prisma"
+import { generateSlug } from "@/app/lib/utils"
 
-// Configuration du pool PG et de l'adaptateur pour Cloudflare / Neon
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+
 
 // Fonction permettant de creer de fausses donnees pour la bd
 const main = async (): Promise<void> => {
@@ -56,7 +52,7 @@ const main = async (): Promise<void> => {
     const categoryNames = ['Electronique', 'Maison', 'Vetements', 'Bijoux', 'Livres']
     const categories:{id:number, name:string, slug:string,}[] = []
     for (const name of categoryNames) {
-        const slug:string = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-') //Enleve tout les accents et remplace les espaces vides pas les tiret (-)
+        const slug:string = generateSlug(name) //Enleve tout les accents et remplace les espaces vides pas les tiret (-)
         const category = await prisma.category.create({
             data: {name, slug}
         })
@@ -72,7 +68,7 @@ const main = async (): Promise<void> => {
         
         // On genere un titre
         const title: string = faker.commerce.productName()
-        const slug: string = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-').concat('-', faker.string.alphanumeric(4)) //Enleve tout les accents et remplace les espaces vides pas les tiret (-) et on ajoute 4 caracteres aleatoires pour eviter les doublons
+        const slug: string = generateSlug(title) + '-' + faker.string.alphanumeric(4) //Enleve tout les accents et remplace les espaces vides pas les tiret (-) et on ajoute 4 caracteres aleatoires pour eviter les doublons
         const product = await prisma.product.create({
             data: {
                 title: title,
