@@ -59,6 +59,40 @@ const handlers = [
       { status: 401 }
     )
   }),
+
+  // Handler pour /api/admin/login
+    http.post('*/api/admin/login', async ({ request }) => {
+        const body = (await request.json()) as { email?: string; password?: string };
+
+        // Simule une connexion réussie
+        if (body.email === 'admin@example.com' && body.password === 'password123') {
+        // Un JWT factice structuré (header.payload.signature)
+        // payload base64 de : {"adminId":1,"email":"admin@example.com","name":"Admin Test"}
+        const mockToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJhbGRpbmRJZCI6IDEsCiAgImVtYWlsIjogImFkbWluQGV4YW1wbGUuY29tIiwKICAibmFtZSI6ICJBZG1pbiBUZXN0Igp9.signature';
+
+        return HttpResponse.json({
+            success: true,
+            data: {
+            token: mockToken,
+            admin: {
+                id: 1,
+                email: 'admin@example.com',
+                name: 'Admin Test',
+            },
+            },
+        });
+        }
+
+        // Simule des identifiants incorrects
+        return HttpResponse.json(
+        {
+            success: false,
+            message: 'Identifiants incorrects',
+        },
+        { status: 400 }
+        );
+    }),
 ]
 
 export { handlers }

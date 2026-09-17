@@ -90,6 +90,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './app'),
+      'next/navigation': path.resolve(__dirname, './app/test/mocks/next-navigation.ts'),
     },
   },
 })
