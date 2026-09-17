@@ -43,7 +43,7 @@ export default function AdminHeader({ onMenuToggle }: HeaderProps) {
 
 
     return (
-        <header className='bg-white border-b border-gray-200 px-4 md:px-6 py-3.5 flex justify-between items-center gap-4 shrink-0'>
+        <header className='border-b border-gray-200 px-4 md:px-6 py-3.5 flex justify-between items-center gap-4 shrink-0'>
             <div className="flex items-center gap-3">
                 <button 
                     onClick={onMenuToggle}

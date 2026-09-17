@@ -10,11 +10,19 @@ export default defineConfig({
     setupFiles: './app/test/setup.ts',
     coverage: {
       provider: 'v8',
+      // Formats de sortie :
+      // - text : dans le terminal
+      // - html : fichier HTML interactif
+      // - lcov : pour SonarQube, Codecov...
       reporter: ['text', 'html', 'lcov'],
+      // Dossier de sortie du rapport HTML
+      reportsDirectory: './coverage',
       exclude: [
         'node_modules/',
         '.gitignore',
         '.next/',
+        '.husky/',
+        '.github/workflows/ci.yml',
         '.open-next/',                      // Build OpenNext (si utilisé) : même raison
         'out/',                             // Dossier de build statique : généré
         'dist/',                            // Dossier de build : généré
@@ -68,14 +76,17 @@ export default defineConfig({
         'setup.ts',                  // Setup Vitest
         
       ],
+      // SEUILS MINIMAUX (le test échoue si en dessous)
       thresholds: {
-        lines: 100,
-        functions: 100,
-        branches: 100,
-        statements: 100,
+        lines: 100,        // 100% des lignes doivent être testées
+        functions: 100,    // 100% des fonctions doivent être appelées
+        branches: 100,     // 100% des branches if/else doivent être explorées
+        statements: 100,   // 100% des instructions doivent être exécutées
       },
     },
   },
+
+  // Alias : permet d'utiliser @/ au lieu de chemins relatifs
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './app'),
