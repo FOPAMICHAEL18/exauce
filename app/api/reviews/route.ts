@@ -1,4 +1,5 @@
-import { prisma } from "@/app/lib/prisma"; 
+import { prisma } from "@/app/lib/prisma"
+import { validateAuthor, validateComment, validateEmail, validateProductId, validateRating } from "@/app/lib/validators"
 
 const POST = async (request: Request): Promise<Response> => {
     try {
@@ -27,7 +28,7 @@ const POST = async (request: Request): Promise<Response> => {
         }
 
         //Validation des champs obligatoire
-        if (!author || author.trim().length < 2) {
+        if (!validateAuthor(author)) {
             return Response.json({
                 success: false,
                 error: "Le nom doit faire au moins 2 caracteres."
@@ -35,7 +36,7 @@ const POST = async (request: Request): Promise<Response> => {
         }
 
         
-        if (!comment || comment.trim().length < 5) {
+        if (!validateComment(comment)) {
             return Response.json({
                 success: false,
                 error: "Le commentaire doit faire au moins 5 caracteres."
@@ -43,7 +44,7 @@ const POST = async (request: Request): Promise<Response> => {
         }
 
         const ratingNumber = parseInt(rating, 10)
-        if (isNaN(ratingNumber) || ratingNumber < 1) {
+        if (!validateRating(ratingNumber)) {
             return Response.json({
                 success: false,
                 error: "La note doit comprendre entre 1 a 5 etoiles."
@@ -51,7 +52,7 @@ const POST = async (request: Request): Promise<Response> => {
         }
 
         const productIdNumber = parseInt(productId, 10)
-        if (isNaN(productIdNumber) || productIdNumber < 1) {
+        if (!validateProductId(productIdNumber)) {
             return Response.json({
                 success: false,
                 error: "Id de produit non valide"
@@ -103,7 +104,7 @@ const GET = async (request: Request): Promise<Response> => {
         }
 
         const productIdNumber = parseInt(productId, 10)
-        if (isNaN(productIdNumber)) {
+        if (!validateProductId(productIdNumber)) {
             return Response.json("Le productId doti etre un nombre", {status: 400})
         }
 

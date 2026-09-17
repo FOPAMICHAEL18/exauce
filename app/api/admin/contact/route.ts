@@ -1,6 +1,7 @@
 //Version ameliorer de request  permetant de renvoyer une reponse et de modifier une requete avant qu'elle n'arrive a la destination finale
 import {NextRequest, NextResponse} from 'next/server'
-import { prisma } from "@/app/lib/prisma"; 
+import { prisma } from "@/app/lib/prisma"
+import { validateEmail } from '@/app/lib/validators'
 
 const PUT = async (request:NextRequest): Promise<Response> => {
     try {
@@ -61,7 +62,7 @@ const PUT = async (request:NextRequest): Promise<Response> => {
         }
 
         //Validation basique
-        if (!address ||!phone || !email ) {
+        if (!address ||!phone || !validateEmail(email)) {
             return Response.json({
                 success: false,
                 message: "Adresse, telephone et email sont obligatoires pour afficher les coordonnees"
@@ -106,7 +107,7 @@ const PUT = async (request:NextRequest): Promise<Response> => {
         return Response.json({
             success: true,
             message: 'Information de contact mis a jour avec succes',
-            product: updateContact
+            data: updateContact
         })
     }
     catch(error) {
