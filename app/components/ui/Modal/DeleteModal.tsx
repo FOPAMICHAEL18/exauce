@@ -16,7 +16,10 @@ const DeleteModal = ({elementToDelete, closeDeleteModal, confirmDelete} : Delete
         '/Admin/Reviews': {line1: 'Supprimer ce commentaire ?', line2: 'Êtes-vous sûr de vouloir supprimer ce commentaire'} 
     }
 
-    const contextPathname = context[pathname] 
+    const contextPathname = context[pathname]|| {
+        line1: 'Supprimer cet élément ?',
+        line2: 'Êtes-vous sûr de vouloir supprimer cet élément'
+    } 
 
     return (
         <div className="fixed w-screen h-screen inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
