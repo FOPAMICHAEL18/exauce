@@ -1,5 +1,5 @@
 import { prisma } from "@/app/lib/prisma"
-import StatCard from "@/app/components/ui/Card/statCard"
+import StatCard from "@/app/components/ui/Card/StatCard"
 import { AdminRecentReview } from "@/app/components/admin/AdminRecentReview"
 import { AdminTopProduct } from "@/app/components/admin/AdminTopProduct"
 

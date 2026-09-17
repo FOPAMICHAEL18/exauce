@@ -1,7 +1,7 @@
 import { prisma } from "@/app/lib/prisma"; 
 import AdminProductFilters from "@/app/components/admin/AdminProductFilters";
 import AdminProductTable from "@/app/components/admin/AdminProductTable";
-import StatCard from "@/app/components/ui/Card/statCard";
+import StatCard from "@/app/components/ui/Card/StatCard";
 
 interface ProductsProps {
     searchParams: Promise<{

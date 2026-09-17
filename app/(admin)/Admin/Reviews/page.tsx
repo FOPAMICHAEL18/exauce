@@ -1,5 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
-import StatCard from "@/app/components/ui/Card/statCard";
+import StatCard from "@/app/components/ui/Card/StatCard";
 import AdminReviewTable from "@/app/components/admin/AdminReviewTable";
 
 interface ProductsProps {

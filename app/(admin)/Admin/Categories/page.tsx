@@ -1,5 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
-import StatCard from "@/app/components/ui/Card/statCard";
+import StatCard from "@/app/components/ui/Card/StatCard";
 import AdminCategoryTable from "@/app/components/admin/AdminCategoryTable";
 import Link from 'next/link'
 
