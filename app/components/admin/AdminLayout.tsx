@@ -8,12 +8,21 @@ import { useAuth } from '@/app/hooks/useAuth'
 
 export default function AdminLayout({children}: {children: React.ReactNode}) {
     const pathname= usePathname()
+    const router = useRouter()
     const {loading, isAuthenticated} = useAuth()
-    const [isMounted, setIsMounted] = useState(false);
+    const [isMounted, setIsMounted] = useState(false)
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
     useEffect(() => {
         setIsMounted(true);
-    }, []);
+    }, [])
+
+    // Redirection propre
+    useEffect(() => {
+        if (isMounted && !loading && !isAuthenticated && pathname !== '/Admin/Login') {
+            router.push('/Admin/Login')
+        }
+    }, [isMounted, loading, isAuthenticated, pathname, router])
 
 
     //Ecran de chargement 
@@ -34,21 +43,21 @@ export default function AdminLayout({children}: {children: React.ReactNode}) {
     }
 
     //On affiche rien sur lsi l'utilisateur n'est pas authentifier
-    if (!isAuthenticated) {
-        console.log(isAuthenticated)
-        if (typeof window !== 'undefined') {
-            window.location.href = '/Admin/Login';
-        }
-        return null; // On retourne null le temps de la redirection
-    }
+    if (!isAuthenticated) return null
 
     //Le layout complet 
     return (
-        <div className='flex h-screen bg-gray-100'>  
-            <AdminSidebar />
-            <div className='flex flex-col flex-1 overflow-hidden'>
-                <AdminHeader />
-                <main className=''>
+        <div className='flex h-screen bg-gray-100 overflow-hidden relative'>
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}  
+            <AdminSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+            <div className='flex flex-col flex-1 w-full min-w-0 overflow-hidden'>
+                <AdminHeader onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+                <main className='flex-1 overflow-y-auto p-4 md:p-6 lg:p-8'>
                     {children}
                 </main>
             </div>

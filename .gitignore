@@ -32,3 +32,8 @@ npm-debug.log
 
 
 /app/generated/prisma
+
+.next/
+dist/
+build/
+out/

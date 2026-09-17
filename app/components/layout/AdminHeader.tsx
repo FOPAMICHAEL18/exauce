@@ -3,8 +3,13 @@ import {useRouter} from 'next/navigation'
 import {usePathname} from 'next/navigation'
 import { useAuth } from '@/app/hooks/useAuth'
 import Link from 'next/link'
+import { Menu, Plus, LogOut } from 'lucide-react'
 
-export default function AdminHeader() {
+interface HeaderProps {
+    onMenuToggle: () => void;
+}
+
+export default function AdminHeader({ onMenuToggle }: HeaderProps) {
     const pathname= usePathname()
     const {logout} = useAuth()
 
@@ -38,30 +43,35 @@ export default function AdminHeader() {
 
 
     return (
-        <header className='flex justify-between items-center py-4 px-20'>
-            <h1 className='text-2xl font-bold text-gray-800'>
-                {getTitle()}
-            </h1>
-
-            {/* <div className='flex gap-4'>
-                <Link href='/Admin/Products/new' className='text-sm  transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
-                    <span className='text-white'>Ajouter un produit</span>
-                </Link>
-                <Link href='/Admin/Reviews' className='text-sm  transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
-                    <span className='text-white'>Gerer les avis</span>
-                </Link>
-                <Link href='/Admin/Contact' className='text-sm transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
-                    <span className='text-white'>Modifier les coordonnees</span> 
-                </Link>
-            </div> */}
-
+        <header className='bg-white border-b border-gray-200 px-4 md:px-6 py-3.5 flex justify-between items-center gap-4 shrink-0'>
+            <div className="flex items-center gap-3">
+                <button 
+                    onClick={onMenuToggle}
+                    className='lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors'
+                    aria-label="Ouvrir le menu"
+                >
+                    <Menu size={22} />
+                </button>
+                <h1 className='text-2xl font-bold text-gray-800'>
+                    {getTitle()}
+                </h1>
+            </div>
                 
-            <div className='flex gap-2'>
-                <Link href='/Admin/Products/New' className='text-sm  transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
-                    <span className='text-white'>+ Ajouter un produit</span>
+            <div className='flex items-center gap-2'>
+                <Link 
+                    href='/Admin/Products/New' 
+                    className='text-sm bg-[#0A1730] text-white! px-3 py-2 md:px-4 md:py-2.5 rounded-lg hover:bg-[#0A1730]/90 transition-all flex items-center gap-1.5 font-medium shadow-sm'
+                >
+                    <Plus size={18} />
+                    <span className='hidden sm:inline'>Ajouter un produit</span>
                 </Link>
-                <button onClick={logout} className='text-sm text-white transition-colors flex items-center gap-2 bg-[#0A1730] p-3 rounded-md hover:cursor-pointer hover:opacity-80'>
-                    <span>Deconnexion</span>
+                <button 
+                    onClick={logout} 
+                    className='text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 p-2 md:px-3 md:py-2.5 rounded-lg transition-colors flex items-center gap-2 border border-gray-200'
+                    title="Déconnexion"
+                >
+                    <LogOut size={18} />
+                    <span className='hidden sm:inline'>Déconnexion</span>
                 </button>
             </div>
         </header>

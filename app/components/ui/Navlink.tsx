@@ -7,15 +7,16 @@ interface NavlinkProps {
     children: React.ReactNode,
     activeClassName?: string,
     className?: string,
-    exact?: boolean
+    exact?: boolean,
+    onClick?: () => void
 }
 
-const Navlink = ({href, children, activeClassName, className, exact}: NavlinkProps) => {
+const Navlink = ({href, children, activeClassName, className, exact, onClick}: NavlinkProps) => {
     const pathname= usePathname()
     //Determine si le lien est actif 
     const isActive = (exact || href === '/') ? pathname === href : pathname.startsWith(href)
     return (
-        <Link href={href}> <span className={`${className} ${isActive? activeClassName : ''}`}>{children}</span> </Link>
+        <Link onClick={onClick} href={href}> <span className={`${className} ${isActive? activeClassName : ''}`}>{children}</span> </Link>
     )
 } 
 
