@@ -1,4 +1,3 @@
-"use client"
 import StepCard from "../ui/Card/StepCard";
 
 interface Step {
@@ -39,7 +38,7 @@ const HowItWorks = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {steps.map((step) => (
-                        <StepCard step={step} />
+                        <StepCard step={step} key={step.stepNumber} />
                     ))}
                 </div>
             </div>
