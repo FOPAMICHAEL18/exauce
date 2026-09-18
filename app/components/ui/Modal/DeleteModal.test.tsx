@@ -1,93 +1,172 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, cleanup, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { DeleteModal } from './DeleteModal'
-import * as navigation from 'next/navigation'
 
-// Mock du module next/navigation
+// 🎯 Mock fonction mutable — pattern bulletproof
+const mockUsePathname = vi.fn<() => string>(() => '/Admin/Products')
+
 vi.mock('next/navigation', () => ({
-  usePathname: vi.fn(),
+  usePathname: () => mockUsePathname(),
 }))
 
-describe('DeleteModal Component', () => {
-  const mockCloseDeleteModal = vi.fn()
-  const mockConfirmDelete = vi.fn()
-  const defaultProps = {
-    elementToDelete: 'Produit Test',
-    closeDeleteModal: mockCloseDeleteModal,
-    confirmDelete: mockConfirmDelete,
-  }
+const mockClose = vi.fn()
+const mockConfirm = vi.fn()
 
-  beforeEach(() => {
-    vi.clearAllMocks()
+beforeEach(() => {
+  mockClose.mockReset()
+  mockConfirm.mockReset()
+  mockUsePathname.mockReturnValue('/Admin/Products')
+})
+
+afterEach(() => {
+  cleanup()
+})
+
+const setup = (elementToDelete = 'Chaise bois') =>
+  render(
+    <DeleteModal
+      elementToDelete={elementToDelete}
+      closeDeleteModal={mockClose}
+      confirmDelete={mockConfirm}
+    />
+  )
+
+// =========================================================================
+// CONTEXTE PAR PATHNAME
+// =========================================================================
+describe('DeleteModal — contexte par pathname', () => {
+  it('affiche le contexte Produit sur /Admin/Products', () => {
+    mockUsePathname.mockReturnValue('/Admin/Products')
+    setup()
+    expect(screen.getByText('Supprimer ce produit ?')).toBeInTheDocument()
+    expect(screen.getByText(/vouloir supprimer le produit/i)).toBeInTheDocument()
   })
 
-  it('affiche le texte correspondant à la route /Admin/Products', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/Admin/Products')
-
-    render(<DeleteModal {...defaultProps} />)
-
-    expect(screen.getByText('Supprimer ce produit ?')).toBeDefined()
-    expect(screen.getByText(/Êtes-vous sûr de vouloir supprimer le produit/i)).toBeDefined()
-    expect(screen.getByText('"Produit Test"')).toBeDefined()
+  it('affiche le contexte Produit sur une sous-route (ex: /Edit)', () => {
+    mockUsePathname.mockReturnValue('/Admin/Products/123/Edit')
+    setup()
+    expect(screen.getByText('Supprimer ce produit ?')).toBeInTheDocument()
   })
 
-  it('affiche le texte correspondant à la route /Admin/Categories', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/Admin/Categories')
-
-    render(<DeleteModal {...defaultProps} />)
-
-    expect(screen.getByText('Supprimer cette categorie ?')).toBeDefined()
-    expect(screen.getByText(/Êtes-vous sûr de vouloir supprimer la categorie/i)).toBeDefined()
+  it('affiche le contexte Catégorie sur /Admin/Categories', () => {
+    mockUsePathname.mockReturnValue('/Admin/Categories')
+    setup()
+    expect(screen.getByText('Supprimer cette catégorie ?')).toBeInTheDocument()
   })
 
-  it('affiche le texte correspondant à la route /Admin/Reviews', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/Admin/Reviews')
-
-    render(<DeleteModal {...defaultProps} />)
-
-    expect(screen.getByText('Supprimer ce commentaire ?')).toBeDefined()
-    expect(screen.getByText(/Êtes-vous sûr de vouloir supprimer ce commentaire/i)).toBeDefined()
+  it('affiche le contexte Avis sur /Admin/Reviews', () => {
+    mockUsePathname.mockReturnValue('/Admin/Reviews')
+    setup()
+    expect(screen.getByText('Supprimer ce commentaire ?')).toBeInTheDocument()
   })
 
-  it('gère le cas d’une route non répertoriée grâce au fallback', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/Admin/UnknownRoute')
+  it('affiche le fallback sur un pathname inconnu', () => {
+    mockUsePathname.mockReturnValue('/Admin/Unknown')
+    setup()
+    expect(screen.getByText('Supprimer cet élément ?')).toBeInTheDocument()
+  })
+})
 
-    render(<DeleteModal {...defaultProps} />)
-
-    expect(screen.getByText('Supprimer cet élément ?')).toBeDefined()
-    expect(screen.getByText(/Êtes-vous sûr de vouloir supprimer cet élément/i)).toBeDefined()
+// =========================================================================
+// RENDU
+// =========================================================================
+describe('DeleteModal — rendu', () => {
+  it("affiche le nom de l'élément à supprimer", () => {
+    setup('Table chêne')
+    expect(screen.getByText(/table chêne/i)).toBeInTheDocument()
   })
 
-  it('appelle closeDeleteModal au clic sur la croix X', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/Admin/Products')
-
-    render(<DeleteModal {...defaultProps} />)
-
-    const closeIconButton = screen.getAllByRole('button')[0] // Bouton X
-    fireEvent.click(closeIconButton)
-
-    expect(mockCloseDeleteModal).toHaveBeenCalledTimes(1)
+  it('a le rôle dialog + aria-modal', () => {
+    setup()
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+    expect(dialog).toHaveAttribute('aria-labelledby', 'delete-modal-title')
   })
 
-  it('appelle closeDeleteModal au clic sur le bouton Annuler', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/Admin/Products')
+  it('affiche les 3 boutons (X, Annuler, Supprimer)', () => {
+    setup()
+    expect(screen.getByLabelText(/fermer la modale/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /annuler/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /oui, supprimer/i })).toBeInTheDocument()
+  })
+})
 
-    render(<DeleteModal {...defaultProps} />)
-
-    const cancelButton = screen.getByRole('button', { name: /annuler/i })
-    fireEvent.click(cancelButton)
-
-    expect(mockCloseDeleteModal).toHaveBeenCalledTimes(1)
+// =========================================================================
+// INTERACTIONS
+// =========================================================================
+describe('DeleteModal — interactions', () => {
+  it('appelle closeDeleteModal au clic sur X', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByLabelText(/fermer la modale/i))
+    expect(mockClose).toHaveBeenCalledTimes(1)
+    expect(mockConfirm).not.toHaveBeenCalled()
   })
 
-  it('appelle confirmDelete au clic sur le bouton Oui, supprimer', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/Admin/Products')
+  it('appelle closeDeleteModal au clic sur Annuler', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByRole('button', { name: /annuler/i }))
+    expect(mockClose).toHaveBeenCalledTimes(1)
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
 
-    render(<DeleteModal {...defaultProps} />)
+  it('appelle confirmDelete au clic sur "Oui, supprimer"', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByRole('button', { name: /oui, supprimer/i }))
+    expect(mockConfirm).toHaveBeenCalledTimes(1)
+    expect(mockClose).not.toHaveBeenCalled()
+  })
 
-    const deleteButton = screen.getByRole('button', { name: /oui, supprimer/i })
-    fireEvent.click(deleteButton)
+  it('appelle closeDeleteModal sur Escape', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.keyboard('{Escape}')
+    expect(mockClose).toHaveBeenCalledTimes(1)
+  })
 
-    expect(mockConfirmDelete).toHaveBeenCalledTimes(1)
+  // 🎯 NOUVEAU : couvre la branche else de `if (e.key === 'Escape')`
+  it("ne ferme PAS la modale sur une autre touche qu'Escape", async () => {
+    const user = userEvent.setup()
+    setup()
+    // 🎯 'a' n'active pas les boutons → teste vraiment la branche `e.key !== 'Escape'`
+    await user.keyboard('a')
+    expect(mockClose).not.toHaveBeenCalled()
+  })
+
+  it('appelle closeDeleteModal au clic sur le backdrop', async () => {
+    const user = userEvent.setup()
+    setup()
+    const dialog = screen.getByRole('dialog')
+    await user.click(dialog.parentElement as HTMLElement)
+    expect(mockClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('ne ferme PAS la modale au clic dans le contenu', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByText('Supprimer ce produit ?'))
+    expect(mockClose).not.toHaveBeenCalled()
+  })
+})
+
+// =========================================================================
+// A11Y
+// =========================================================================
+describe('DeleteModal — accessibilité', () => {
+  it('focus le bouton Annuler au mount', async () => {
+    setup()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /annuler/i })).toHaveFocus()
+    )
+  })
+
+  it("nettoie l'écouteur Escape au démontage", () => {
+    const { unmount } = setup()
+    unmount()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(mockClose).not.toHaveBeenCalled()
   })
 })
