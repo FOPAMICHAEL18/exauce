@@ -212,6 +212,13 @@ describe('AdminProductTable — pagination', () => {
       ).not.toBeInTheDocument()
     )
   })
+
+  it('navigue vers la page précédente au clic', async () => {
+    const user = userEvent.setup()
+    render(<AdminProductTable {...defaultProps} currentPage={2} />)
+    await user.click(screen.getByLabelText(/page précédente/i))
+    expect(mockPush).toHaveBeenCalledWith('/Admin/Products?page=1')
+  })
 })
 
 // =========================================================================

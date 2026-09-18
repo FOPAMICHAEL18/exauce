@@ -83,15 +83,30 @@ describe('ViewTracker', () => {
   it("ne log pas d'erreur en cas d'AbortError", async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const { unmount } = render(<ViewTracker slug="chaise" />)
-    await waitFor(() => expect(calls).toHaveLength(1))
-    unmount()
+    // 🎯 fetch qui ne se résout JAMAIS, mais rejette sur abort
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'))
+          })
+        })
+    )
 
-    // Laisse l'AbortError se propager au catch
-    await new Promise((r) => setTimeout(r, 50))
+    const { unmount } = render(<ViewTracker slug="chaise" />)
+
+    // Attendre que le fetch soit lancé (pas forcément résolu)
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1))
+
+    unmount()  // → abort() → la promesse rejette avec DOMException(AbortError)
+
+    // Laisse le microtask traiter le catch
+    await new Promise((r) => setTimeout(r, 20))
+
     expect(errorSpy).not.toHaveBeenCalled()
 
     errorSpy.mockRestore()
+    fetchSpy.mockRestore()
   })
 
   it('log une erreur si le réseau échoue', async () => {
@@ -128,5 +143,24 @@ describe('ViewTracker', () => {
     rerender(<ViewTracker slug="table" />)
     await waitFor(() => expect(calls).toHaveLength(2))
     expect(calls[1].slug).toBe('table')
+  })
+
+  it("ignore silencieusement l'erreur MSW 'already been handled'", async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // 🎯 Force fetch à rejeter avec un Error contenant "already been handled"
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new Error('the request has already been handled'))
+
+    render(<ViewTracker slug="chaise" />)
+
+    await new Promise((r) => setTimeout(r, 50))
+
+    // Aucun log : le composant doit ignorer cette erreur spécifique
+    expect(errorSpy).not.toHaveBeenCalled()
+
+    errorSpy.mockRestore()
+    fetchSpy.mockRestore()
   })
 })

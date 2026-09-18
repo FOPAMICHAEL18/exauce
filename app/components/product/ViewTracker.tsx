@@ -25,11 +25,11 @@ const ViewTracker = ({ slug }: ViewTrackerProps) => {
         })
       } catch (err) {
         // Ignore AbortError ET l'InterceptorError de MSW (abort après traitement)
-        if (
-            (err instanceof DOMException && err.name === 'AbortError') ||
-            (err instanceof Error && err.message.includes('already been handled'))
-        ) {
-            return
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return
+        }
+        if (err instanceof Error && err.message.includes('already been handled')) {
+          return
         }
         console.error('Erreur tracking vue :', err)
       }
