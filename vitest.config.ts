@@ -79,7 +79,7 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './app'),
+      '@': path.resolve(__dirname, './'),
       'next/navigation': path.resolve(__dirname, './app/test/mocks/next-navigation.ts'),
       // Mock local pour next/link afin d'éviter les erreurs d'analyse ESM/CJS sous Vite
       'next/link': path.resolve(__dirname, './app/test/mocks/next-link.tsx'),
