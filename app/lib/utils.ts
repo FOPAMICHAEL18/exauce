@@ -45,4 +45,29 @@ const formatDate = (date: Date): string => {
   });
 }
 
-export {generateSlug, formatDate, formatPrice}
+// formate les donnees geaographiques
+const buildMapSrc = (
+  latitude: number | null | undefined,
+  longitude: number | null | undefined,
+  address: string
+): string => {
+  const hasCoords =
+    typeof latitude === 'number' &&
+    typeof longitude === 'number' &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude)
+
+  if (hasCoords) {
+    return `https://maps.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`
+  }
+
+  const trimmedAddress = address.trim()
+  if (trimmedAddress.length > 0) {
+    return `https://maps.google.com/maps?q=${encodeURIComponent(trimmedAddress)}&z=14&output=embed`
+  }
+
+  // 🎯 Fallback ultime : vue monde
+  return 'https://maps.google.com/maps?q=0,0&z=2&output=embed'
+}
+
+export {generateSlug, formatDate, formatPrice, buildMapSrc}
