@@ -2,9 +2,9 @@ import { prisma } from "@/app/lib/prisma";
 import {NextRequest, NextResponse} from 'next/server'
 import {cookies} from 'next/headers'
 
-const POST = async (request: NextRequest, {params}: {params: {slug: string}}) : Promise<NextResponse> => {
+const POST = async (request: NextRequest, {params}: {params: Promise<{slug: string}>}) : Promise<NextResponse> => {
     try {
-        const {slug} = params
+        const {slug} = await params
 
         //On recupere le cookie store 
         // cookies() est asynchrone
