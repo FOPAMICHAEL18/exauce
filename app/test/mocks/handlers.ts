@@ -12,61 +12,91 @@ const contactData = {
   longitude: 9.7043,
 }
 
-const handlers = [
-    // Contact Handlers
-    http.get('*/api/contact', () => HttpResponse.json(contactData)),
-    http.get('*/api/admin/contact', () => HttpResponse.json(contactData)),
-    http.put('*/api/admin/contact', async ({ request }) => {
-        const body = await request.json()
-        return HttpResponse.json({
+export const handlers = [
+  // Contact
+  http.get('*/api/contact', () => HttpResponse.json(contactData)),
+  http.get('*/api/admin/contact', () => HttpResponse.json(contactData)),
+  http.put('*/api/admin/contact', async ({ request }) => {
+    const body = (await request.json()) as object
+    return HttpResponse.json({
+      success: true,
+      message: 'Coordonnées mises à jour',
+      data: { ...contactData, ...body },
+    })
+  }),
+
+  // Profile
+  http.get('*/api/admin/profile', () =>
+    HttpResponse.json({ id: 1, email: 'admin@boutique.fr', name: 'Administrateur' })
+  ),
+  http.put('*/api/admin/profile', async ({ request }) => {
+    const body = (await request.json()) as object
+    return HttpResponse.json({ id: 1, ...body })
+  }),
+
+  // Login
+  http.post('*/api/admin/login', async ({ request }) => {
+    const body = (await request.json()) as { email?: string; password?: string }
+    if (body.email === 'admin@example.com' && body.password === 'password123') {
+      return HttpResponse.json({
         success: true,
-        message: 'Coordonnées mises à jour',
-        data: { ...contactData, ...(body as object) },
-        })
-    }),
+        data: {
+          token: 'mock.jwt.token',
+          admin: { id: 1, email: 'admin@example.com', name: 'Admin Test' },
+        },
+      })
+    }
+    return HttpResponse.json(
+      { success: false, message: 'Identifiants incorrects' },
+      { status: 401 }
+    )
+  }),
 
-    // Profile Handlers
-    http.get('*/api/admin/profile', () => {
-        return HttpResponse.json({
-        id: 1,
-        email: 'admin@boutique.fr',
-        name: 'Administrateur',
-        })
-    }),
-    http.put('*/api/admin/profile', async ({ request }) => {
-        const body = await request.json()
-        return HttpResponse.json({
-        id: 1,
-        ...(body as object),
-        })
-    }),
+  // Reviews POST — cohérent avec l'API réelle
+    http.post('/api/reviews', async ({ request }) => {
+        let body: any = {}
+        try {
+            body = await request.json()
+        } catch {
+            return HttpResponse.json(
+            { success: false, message: 'Corps de requête invalide' },
+            { status: 400 }
+            )
+        }
 
-    // Login Handler (Version unique consolidée)
-    http.post('*/api/admin/login', async ({ request }) => {
-        const body = (await request.json()) as { email?: string; password?: string }
+        // 🍯 Honeypot → faux succès
+        if (typeof body.honeypot === 'string' && body.honeypot.length > 0) {
+            await new Promise((r) => setTimeout(r, 200))
+            return HttpResponse.json(
+            { success: true, message: 'Avis enregistré.' },
+            { status: 201 }
+            )
+        }
 
-        if (body.email === 'admin@example.com' && body.password === 'password123') {
-        const mockToken =
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJhbGRpmdIdIjogMSwKICAiZW1haWwiOiAiYWRtaW5AZXhhbXBsZS5jb20iLAogICJuYW1lIjogIkFkbWluIFRlc3QiCn0.signature'
+        if (body.author === 'TriggerError') {
+            return HttpResponse.json(
+            { success: false, message: 'Erreur personnalisée' },
+            { status: 400 }
+            )
+        }
 
-        return HttpResponse.json({
-            success: true,
-            data: {
-            token: mockToken,
-            admin: {
-                id: 1,
-                email: 'admin@example.com',
-                name: 'Admin Test',
-            },
-            },
-        })
+        if (body.author === 'NoMessageError') {
+            return HttpResponse.json({ success: false }, { status: 400 })
         }
 
         return HttpResponse.json(
-        { success: false, message: 'Identifiants incorrects' },
-        { status: 401 }
+            {
+            success: true,
+            message: 'Avis enregistré avec succès',
+            data: {
+                id: 1,
+                author: body.author,
+                rating: Number(body.rating),
+                comment: body.comment,
+                createdAt: new Date().toISOString(),
+            },
+            },
+            { status: 201 }
         )
     }),
 ]
-
-export { handlers }

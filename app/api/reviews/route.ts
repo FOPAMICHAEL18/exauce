@@ -1,111 +1,96 @@
 import { prisma } from "@/app/lib/prisma"
-import { validateAuthor, validateComment, validateEmail, validateProductId, validateRating } from "@/app/lib/validators"
+import {
+  validateAuthor, validateComment, validateEmail,
+  validateProductId, validateRating,
+} from "@/app/lib/validators"
 
-const POST = async (request: Request): Promise<Response> => {
-    try {
-        // On lit le corps de la requete envoye en JSON par le frontend
-        const body = (await request.json()) as Record<string, unknown>   // Veut dire que body est un objet donc les cles somt des chaines de caracteres et les valeurs peuvent etre n'importe quoi
-        if (!body || typeof body !== 'object') {
-            return Response.json({
-                success: false,
-                error: "donnees invalides"
-            }, {status: 400})
-        }
+// Latence aléatoire : le bot ne peut pas distinguer le faux succès d'un vrai
+const fakeDelay = () => new Promise((r) => setTimeout(r, 300 + Math.random() * 400))
 
-        const author = typeof body.author === 'string' ? body.author : ''
-        const email = typeof body.email === 'string' ? body.email : ''
-        const rating = typeof body.rating === 'string' ? body.rating : ''
-        const comment = typeof body.comment === 'string' ? body.comment : ''
-        const productId = typeof body.productId === 'string' ? body.productId : ''
-        const honeypot = typeof body.honeypot === 'string' ? body.honeypot : ''
+export const POST = async (request: Request): Promise<Response> => {
+  try {
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
 
-        //ANTY-SPAM verification du honeypot
-        if (honeypot && honeypot.length > 0) {
-            return Response.json({
-                success: true,
-                message: "Avis enregistre"
-            })
-        }
-
-        //Validation des champs obligatoire
-        if (!validateAuthor(author)) {
-            return Response.json({
-                success: false,
-                error: "Le nom doit faire au moins 2 caracteres."
-            }, {status: 400})
-        }
-
-        
-        if (!validateComment(comment)) {
-            return Response.json({
-                success: false,
-                error: "Le commentaire doit faire au moins 5 caracteres."
-            }, {status: 400})
-        }
-
-        const ratingNumber = parseInt(rating, 10)
-        if (!validateRating(ratingNumber)) {
-            return Response.json({
-                success: false,
-                error: "La note doit comprendre entre 1 a 5 etoiles."
-            }, {status: 400})
-        }
-
-        const productIdNumber = parseInt(productId, 10)
-        if (!validateProductId(productIdNumber)) {
-            return Response.json({
-                success: false,
-                error: "Id de produit non valide"
-            }, {status: 400})
-        }
-
-        //On enregistre l'avis dans la base de donnees
-        const newReview = await prisma.review.create({
-            data: {
-                author: author.trim(),
-                email: email?.trim(),   // si email vide on met null
-                rating: ratingNumber,
-                comment: comment.trim(),
-                productId: productIdNumber,
-                status: "published"
-            }
-        })
-
-        return Response.json({
-            success: true,
-            message: "Merci pour votre avis",
-            review: newReview
-        })
-
+    if (!body || typeof body !== 'object') {
+      return Response.json({ success: false, message: "Données invalides." }, { status: 400 })
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API review', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API review', error)
-        }
 
-        return Response.json({
-            success: false,
-            error: "Erreur interne du serveur",
-        }, {status: 500})
+    const author   = typeof body.author   === 'string' ? body.author.trim()   : ''
+    const email    = typeof body.email    === 'string' ? body.email.trim()    : ''
+    const comment  = typeof body.comment  === 'string' ? body.comment.trim()  : ''
+    const honeypot = typeof body.honeypot === 'string' ? body.honeypot.trim() : ''
+
+    const ratingNumber    = Number(body.rating)
+    const productIdNumber = Number(body.productId)
+
+    // 🍯 HONEYPOT : faux succès, rien n'est écrit en base
+    if (honeypot.length > 0) {
+      await fakeDelay()
+      return Response.json({ success: true, message: "Avis enregistré." }, { status: 201 })
     }
+
+    // Validations
+    if (!validateAuthor(author))
+      return Response.json({ success: false, message: "Le nom doit faire au moins 2 caractères." }, { status: 400 })
+
+    if (email.length > 0 && !validateEmail(email))
+      return Response.json({ success: false, message: "Adresse email invalide." }, { status: 400 })
+
+    if (!validateComment(comment))
+      return Response.json({ success: false, message: "Le commentaire doit faire au moins 5 caractères." }, { status: 400 })
+
+    if (!validateRating(ratingNumber))
+      return Response.json({ success: false, message: "La note doit être comprise entre 1 et 5 étoiles." }, { status: 400 })
+
+    if (!validateProductId(productIdNumber))
+      return Response.json({ success: false, message: "Identifiant de produit non valide." }, { status: 400 })
+
+    // Évite une FK violation (500) si le produit n'existe pas
+    const productExists = await prisma.product.findUnique({
+      where: { id: productIdNumber },
+      select: { id: true },
+    })
+    if (!productExists)
+      return Response.json({ success: false, message: "Produit introuvable." }, { status: 404 })
+
+    const newReview = await prisma.review.create({
+      data: {
+        author,
+        email: email,
+        rating: ratingNumber,
+        comment,
+        productId: productIdNumber,
+        status: "published",
+      },
+      select: { id: true, author: true, rating: true, comment: true, createdAt: true },
+    })
+
+    return Response.json({ success: true, data: newReview }, { status: 201 })
+  } catch (error) {
+    console.error('Erreur API review POST:', error instanceof Error ? error.message : error)
+    return Response.json({ success: false, message: "Erreur interne du serveur." }, { status: 500 })
+  }
 }
 
-const GET = async (request: Request): Promise<Response> => {
+
+export const GET = async (request: Request): Promise<Response> => {
     try {
-        const url = new URL (request.url)
+        const url = new URL(request.url)
         const productId = url.searchParams.get("productId")
 
         if (!productId) {
-            return Response.json("Le parametre productId est requis", {status: 400})
+            return Response.json({
+                success: false,
+                message: "Le paramètre productId est requis."
+            }, { status: 400 })
         }
 
         const productIdNumber = parseInt(productId, 10)
         if (!validateProductId(productIdNumber)) {
-            return Response.json("Le productId doti etre un nombre", {status: 400})
+            return Response.json({
+                success: false,
+                message: "Le productId doit être un nombre valide."
+            }, { status: 400 })
         }
 
         const reviews = await prisma.review.findMany({
@@ -124,19 +109,17 @@ const GET = async (request: Request): Promise<Response> => {
                 createdAt: true,
             }
         })
-        return Response.json(reviews)
-    }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API reviews GET:', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API reviews GET', error)
-        }
 
-        return new Response('Erreur serveur', {status: 500})
+        return Response.json({
+            success: true,
+            data: reviews
+        })
+
+    } catch (error) {
+        console.error('Erreur API reviews GET:', error instanceof Error ? error.message : error)
+        return Response.json({
+            success: false,
+            message: "Erreur lors de la récupération des avis."
+        }, { status: 500 })
     }
 }
-
-export {POST, GET}

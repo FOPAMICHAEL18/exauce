@@ -22,6 +22,7 @@ const ProductDetailPage = async ({ params }: ProductDetailPageProps) => {
             include: {
                 category: true,
                 review: {
+                    where: { status: 'published' },
                     orderBy: { createdAt: 'desc' }
                 },
                 image: true
