@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { DeleteModal } from '../ui/Modal/DeleteModal'
 import { apiCall } from '@/app/lib/api'
-import { formatPrice } from '@/app/lib/utils'
+import { formatPrice, buildPageList } from '@/app/lib/utils'
 
 interface ProductRow {
   id: number
@@ -29,22 +29,6 @@ interface AdminProductTableProps {
   totalPages: number
 }
 
-// 🔧 Truncate la pagination : 1 … 4 5 6 … 20
-const buildPageList = (current: number, total: number): (number | '…')[] => {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-
-  const pages: (number | '…')[] = [1]
-  const start = Math.max(2, current - 1)
-  const end = Math.min(total - 1, current + 1)
-
-  if (start > 2) pages.push('…')
-  for (let i = start; i <= end; i++) pages.push(i)
-  if (end < total - 1) pages.push('…')
-  pages.push(total)
-
-  return pages
-}
-
 const AdminProductTable = ({
   products,
   currentSearch,
@@ -61,7 +45,7 @@ const AdminProductTable = ({
   const [productToDelete, setProductToDelete] = useState<{ id: number; title: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // 🔧 Reset UNIQUEMENT quand la nouvelle page arrive réellement
+  // Reset loadingPage UNIQUEMENT quand la nouvelle page arrive réellement
   useEffect(() => {
     if (loadingPage !== null && currentPage === loadingPage) {
       setLoadingPage(null)
@@ -93,9 +77,8 @@ const AdminProductTable = ({
 
   const closeDeleteModal = () => setProductToDelete(null)
 
-  const confirmDelete = async () => {
-    if (!productToDelete) return
-    const { id } = productToDelete
+  // 🎯 Signature simplifiée : on passe l'id directement, plus de garde `if (!productToDelete)`
+  const confirmDelete = async (id: number) => {
     setDeletingId(id)
     closeDeleteModal()
 
@@ -107,7 +90,6 @@ const AdminProductTable = ({
       if (response.success) {
         startTransition(() => router.refresh())
       } else {
-        // 🔧 On garde le message de l'API (au lieu d'un alert générique)
         setError(response.message || 'Erreur lors de la suppression du produit.')
       }
     } catch {
@@ -121,7 +103,7 @@ const AdminProductTable = ({
 
   return (
     <div className="space-y-4 relative">
-      {/* Bandeau d'erreur (remplace alert) */}
+      {/* Bandeau d'erreur */}
       {error && (
         <div
           role="alert"
@@ -143,7 +125,7 @@ const AdminProductTable = ({
         <DeleteModal
           elementToDelete={productToDelete.title}
           closeDeleteModal={closeDeleteModal}
-          confirmDelete={confirmDelete}
+          confirmDelete={() => confirmDelete(productToDelete.id)}
         />
       )}
 
@@ -158,7 +140,8 @@ const AdminProductTable = ({
           >
             <div className="flex items-center gap-2 bg-[#0A1730] text-white px-4 py-2 rounded-lg text-xs font-medium shadow-lg">
               <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-              <span>Chargement de la page {loadingPage ?? currentPage}...</span>
+              {/* 🎯 Fallback `?? currentPage` supprimé — loadingPage est toujours non-null ici */}
+              <span>Chargement de la page {loadingPage}...</span>
             </div>
           </div>
         )}

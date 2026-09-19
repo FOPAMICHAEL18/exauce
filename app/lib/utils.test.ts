@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateSlug, formatPrice, formatDate, buildMapSrc } from './utils'
+import { generateSlug, formatPrice, formatDate, buildMapSrc, buildPageList } from './utils'
 
 //Test de generateSlug
 describe('generateSlug', () => {
@@ -161,5 +161,129 @@ describe('buildMapSrc', () => {
   it('rejette Infinity comme coordonnée', () => {
     const url = buildMapSrc(Infinity, 9.7043, 'Rue Test')
     expect(url).toBe('https://maps.google.com/maps?q=Rue%20Test&z=14&output=embed')
+  })
+})
+
+//test de buildPageList
+describe('buildPageList', () => {
+  // =======================================================================
+  // PETITE PAGINATION (total <= 7) → toutes les pages, pas d'ellipsis
+  // =======================================================================
+  describe('petite pagination', () => {
+    it('retourne [1] pour total = 1', () => {
+      expect(buildPageList(1, 1)).toEqual([1])
+    })
+
+    it('retourne [1, 2, 3] pour total = 3', () => {
+      expect(buildPageList(2, 3)).toEqual([1, 2, 3])
+    })
+
+    it('retourne les 7 pages sans ellipsis pour total = 7', () => {
+      expect(buildPageList(4, 7)).toEqual([1, 2, 3, 4, 5, 6, 7])
+    })
+
+    it("n'insère aucun '…' quand total <= 7", () => {
+      for (let total = 1; total <= 7; total++) {
+        const result = buildPageList(1, total)
+        expect(result).not.toContain('…')
+        expect(result).toHaveLength(total)
+      }
+    })
+  })
+
+  // =======================================================================
+  // GRANDE PAGINATION — DÉBUT (current proche de 1)
+  // =======================================================================
+  describe('grande pagination — début', () => {
+    it('current=1, total=20 → [1, 2, …, 20]', () => {
+      expect(buildPageList(1, 20)).toEqual([1, 2, '…', 20])
+    })
+
+    it('current=2, total=20 → [1, 2, 3, …, 20]', () => {
+      expect(buildPageList(2, 20)).toEqual([1, 2, 3, '…', 20])
+    })
+
+    it('current=3, total=20 → [1, 2, 3, 4, …, 20]', () => {
+      expect(buildPageList(3, 20)).toEqual([1, 2, 3, 4, '…', 20])
+    })
+
+    it('current=4, total=20 → [1, …, 3, 4, 5, …, 20]', () => {
+      expect(buildPageList(4, 20)).toEqual([1, '…', 3, 4, 5, '…', 20])
+    })
+  })
+
+  // =======================================================================
+  // GRANDE PAGINATION — MILIEU (deux ellipsis)
+  // =======================================================================
+  describe('grande pagination — milieu', () => {
+    it('current=10, total=20 → [1, …, 9, 10, 11, …, 20]', () => {
+      expect(buildPageList(10, 20)).toEqual([1, '…', 9, 10, 11, '…', 20])
+    })
+
+    it('current=5, total=50 → [1, …, 4, 5, 6, …, 50]', () => {
+      expect(buildPageList(5, 50)).toEqual([1, '…', 4, 5, 6, '…', 50])
+    })
+  })
+
+  // =======================================================================
+  // GRANDE PAGINATION — FIN (current proche de total)
+  // =======================================================================
+  describe('grande pagination — fin', () => {
+    it('current=17, total=20 → [1, …, 16, 17, 18, …, 20]', () => {
+      expect(buildPageList(17, 20)).toEqual([1, '…', 16, 17, 18, '…', 20])
+    })
+
+    it('current=18, total=20 → [1, …, 17, 18, 19, 20]', () => {
+      expect(buildPageList(18, 20)).toEqual([1, '…', 17, 18, 19, 20])
+    })
+
+    it('current=19, total=20 → [1, …, 18, 19, 20]', () => {
+      expect(buildPageList(19, 20)).toEqual([1, '…', 18, 19, 20])
+    })
+
+    it('current=20, total=20 → [1, …, 19, 20]', () => {
+      // ⚠️ Comportement actuel — voir note plus bas
+      expect(buildPageList(20, 20)).toEqual([1, '…', 19, 20])
+    })
+  })
+
+  // =======================================================================
+  // PROPRIÉTÉS INVARIANTES (toujours vraies)
+  // =======================================================================
+  describe('propriétés invariantes', () => {
+    it('commence toujours par 1', () => {
+      expect(buildPageList(1, 20)[0]).toBe(1)
+      expect(buildPageList(10, 20)[0]).toBe(1)
+      expect(buildPageList(20, 20)[0]).toBe(1)
+      expect(buildPageList(1, 5)[0]).toBe(1)
+    })
+
+    it('finit toujours par total', () => {
+      expect(buildPageList(1, 20).at(-1)).toBe(20)
+      expect(buildPageList(10, 20).at(-1)).toBe(20)
+      expect(buildPageList(4, 7).at(-1)).toBe(7)
+    })
+
+    it("n'a jamais deux ellipsis consécutifs", () => {
+      for (let current = 1; current <= 20; current++) {
+        const pages = buildPageList(current, 20)
+        for (let i = 0; i < pages.length - 1; i++) {
+          const both = pages[i] === '…' && pages[i + 1] === '…'
+          expect(both).toBe(false)
+        }
+      }
+    })
+
+    it('contient toujours la page courante (sauf si total <= 7)', () => {
+      for (let current = 1; current <= 20; current++) {
+        const pages = buildPageList(current, 20)
+        expect(pages).toContain(current)
+      }
+    })
+
+    it('ne contient aucun doublon de numéro', () => {
+      const numbers = buildPageList(10, 20).filter((p): p is number => p !== '…')
+      expect(new Set(numbers).size).toBe(numbers.length)
+    })
   })
 })
