@@ -42,6 +42,20 @@ export default defineConfig({
         // Types DANS app/ (au cas où)
         '**/*.d.ts',
         '**/types/**',
+
+        // Code généré (Prisma)
+        'app/generated/**',
+
+        // Client Prisma (initialisation singleton)
+        'app/lib/prisma.ts',
+
+        // Pages statiques (aucune logique métier)
+        'app/(public)/A-propos/**',
+        'app/(public)/Comment-ca-marche/**',
+        'app/layout.tsx',
+        'app/(admin)/layout.tsx',
+        'app/(public)/layout.tsx',
+        'app/components/layout/Footer.tsx',
       ],
       thresholds: {
         statements: 90,
