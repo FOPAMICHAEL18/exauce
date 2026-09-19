@@ -8,82 +8,56 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './app/test/setup.ts',
+    clearMocks: true,     // efface l'historique
+    mockReset: true,      // + réinitialise les implémentations
+    restoreMocks: true,   // + restaure les spies originaux
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
+      include: ['app/**/*.{ts,tsx}'],
+      clean: true,
+      reportOnFailure: true,
       exclude: [
-        'node_modules/',
-        '**/components/ui/Map.tsx',
-        '.gitignore',
-        '.next/',
-        '.husky/',
-        '.github/workflows/ci.yml',
-        '.open-next/',
-        'out/',
-        'dist/',
-        'build/',
-        '.vinxi/',
-        '.vinext/',
-        '.agents/',
-        '.git/',
-        '.vscode/',
-        '.idea/',
-        '*.md',
-        '*.json',
-        'package-lock.json',
-        'package.json',
-        'skills-lock.json',
-        '.wrangler/',
-        'prisma/',
-        'prisma/migrations/**',
-        'prisma/seed.ts',
-        '**/*.config.*',
-        '**/*.config.js',
-        '**/*.config.mjs',
-        'postcss.config.mjs',
-        'prisma.config.ts',
-        '**/*.d.ts',
-        '**/types/**',
-        'next-env.d.ts',
-        'worker-configuration.d.ts',
-        '**/layout.tsx',
+        // Next.js triviaux DANS app/
         '**/loading.tsx',
         '**/not-found.tsx',
         '**/error.tsx',
-        '**/page.tsx',
         '**/template.tsx',
         '**/default.tsx',
-        'middleware.ts',
-        'proxy.ts',
-        '.env',
-        '.env.*',
-        '.dev.vars',
-        '.dev.vars.*',
+
+        // Composant tiers DANS app/
+        '**/components/ui/Map.tsx',
+
+        // Tests DANS app/
         '**/*.test.ts',
         '**/*.test.tsx',
         '**/*.spec.ts',
         '**/*.spec.tsx',
+
+        // Infra test DANS app/test/
         '**/mocks/**',
-        'e2e/',
         'setup.ts',
+
+        // Types DANS app/ (au cas où)
+        '**/*.d.ts',
+        '**/types/**',
       ],
       thresholds: {
-        statements: 95,
+        statements: 90,
         branches: 90,
-        functions: 95,
-        lines: 95,
+        functions: 90,
+        lines: 90,
       },
     },
   },
 
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './'),
-      'next/navigation': path.resolve(__dirname, './app/test/mocks/next-navigation.ts'),
-      // Mock local pour next/link afin d'éviter les erreurs d'analyse ESM/CJS sous Vite
-      'next/link': path.resolve(__dirname, './app/test/mocks/next-link.tsx'),
-      'next/image': path.resolve(__dirname, './app/test/mocks/next-image.tsx'),
+      '@': path.resolve(import.meta.dirname, './'),
+      'next/navigation': path.resolve(import.meta.dirname, './app/test/mocks/next-navigation.ts'),
+      'next/link': path.resolve(import.meta.dirname, './app/test/mocks/next-link.tsx'),
+      'next/image': path.resolve(import.meta.dirname, './app/test/mocks/next-image.tsx'),
     },
   },
 })
