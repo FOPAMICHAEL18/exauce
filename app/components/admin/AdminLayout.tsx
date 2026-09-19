@@ -29,7 +29,11 @@ export default function AdminLayout({children}: {children: React.ReactNode}) {
     if (loading || !isMounted) {
         return (
             <div className='flex items-center justify-center min-h-screen'>
-                <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-[#0A1730]'></div>
+                <div
+                    role="status"
+                    aria-label="Chargement de l'administration"
+                    className='animate-spin rounded-full h-12 w-12 border-b-2 border-[#0A1730]'
+                ></div>
             </div>
         )
     }
@@ -49,7 +53,8 @@ export default function AdminLayout({children}: {children: React.ReactNode}) {
     return (
         <div className='flex h-screen bg-gray-100 overflow-hidden relative'>
             {isSidebarOpen && (
-                <div 
+                <div
+                    data-testid="sidebar-overlay"
                     className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
                     onClick={() => setIsSidebarOpen(false)}
                 />
