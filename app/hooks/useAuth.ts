@@ -67,7 +67,7 @@ export function useAuth() {
 
       return {
         success: false,
-        message: response.message,
+        message: response.message || 'Identifiants incorrects.',
       };
     } catch (error) {
       return {
