@@ -30,7 +30,7 @@ const adapter = new PrismaNeonHttp(process.env.DATABASE_URL, {});
 //export permet d'importer prisma n'importe où dans le projet.
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ 
     adapter,
-    log: ["query", "info", "warn", "error"], // 👈 Affiche les logs détaillés dans le terminal 
+    // log: ["query", "info", "warn", "error"], // 👈 Affiche les logs détaillés dans le terminal 
 });
 
 //Ce que ça fait : En mode de développement (lorsque Next.js recharge le code à chaque sauvegarde de fichier), cette ligne enregistre l'instance prisma dans globalThis. Sans cette ligne, chaque Hot Reload recréerait un nouveau pool et épuiserait toutes les connexions de ta BDD.
