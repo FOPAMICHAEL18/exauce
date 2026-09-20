@@ -53,6 +53,7 @@
     "msw": "^2.15.0",
     "prisma": "^7.9.1",
     "tailwindcss": "latest",
+    "tsx": "^4.23.15",
     "typescript": "latest",
     "vite": "latest",
     "vitest": "^5.0.0",

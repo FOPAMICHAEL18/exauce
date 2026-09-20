@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,87 +6,111 @@ datasource db {
   provider = "postgresql"
 }
 
+enum StockStatus {
+  disponible
+  rupture
+}
+
+enum ReviewStatus {
+  published
+  hidden
+}
+
 model Admin {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String
-  surname   String
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Category {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  slug      String   @unique
-  product   Product[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Product {
   id            Int      @id @default(autoincrement())
-  title         String   
-  slug          String   @unique
-  description   String   @db.Text
-  price         Decimal  @db.Decimal(10, 2)
-  stockStatus   String   @default("disponible")
-  categoryId    Int
-  views         Int      @default(0)
-  category      Category @relation(fields:[categoryId], references: [id], onDelete: Cascade)
-  image         Image[]
-  review        Review[]
-  viewLogs      View[]  
+  email         String   @unique @db.VarChar(255)
+  name          String   @db.VarChar(100)
+  surname       String   @db.VarChar(100)
+  passwordHash  String   @db.VarChar(255)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
 
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique @db.VarChar(100)
+  slug      String    @unique @db.VarChar(120)
+  product   Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  title       String      @db.VarChar(200)
+  slug        String      @unique @db.VarChar(220)
+  description String      @db.Text
+  price       Decimal     @db.Decimal(10, 2)
+  stockStatus StockStatus @default(disponible)
+  categoryId  Int
+  views       Int         @default(0)
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  image       Image[]
+  review      Review[]
+  viewLogs    View[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([stockStatus])
+  @@index([createdAt])
+  @@index([categoryId, stockStatus])
+  @@index([views])
+}
+
 model Image {
-  id            Int       @id @default(autoincrement())
-  url           String    //URL R@
-  altText       String?   //Texte alternatif pour le SEO
-  order         Int       @default(0) // Ordre d'affichage
-  productId     Int
-  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id        Int      @id @default(autoincrement())
+  url       String   @db.VarChar(500)
+  altText   String?  @db.VarChar(200)
+  order     Int      @default(0)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
 }
 
 model Review {
-  id            Int       @id @default(autoincrement())
-  author        String    //Nom ou pseudo
-  email         String   
-  rating        Int      //1 a 5
-  comment       String    @db.Text
-  status        String    @default("published") // published ou hidden
-  productId     Int
-  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id        Int          @id @default(autoincrement())
+  author    String       @db.VarChar(100)
+  email     String       @db.VarChar(255)
+  rating    Int
+  comment   String       @db.Text
+  status    ReviewStatus @default(published)
+  productId Int
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([productId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([productId, status])
 }
 
 model Contact {
-  id            Int       @id @default(autoincrement())
-  address       String    @db.Text 
-  phone         String
-  whatsapp      String?      
-  email         String    
-  hours         String?   
-  socials       String?
-  latitude      Float?
-  longitude     Float?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id        Int      @id @default(autoincrement())
+  address   String   @db.Text
+  phone     String   @db.VarChar(30)
+  whatsapp  String?  @db.VarChar(30)
+  email     String   @db.VarChar(255)
+  hours     String?  @db.Text
+  socials   String?  @db.Text
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model View {
-  id            Int       @id @default(autoincrement())
-  sessionId    String  //Identifiant unique du visiteur (generer par le serveur)
-  productId     Int    //ID du produit consulter
-  product       Product   @relation(fields: [productId], references:[id], onDelete: Cascade)
-  createdAt     DateTime  @default(now())
+  id        Int      @id @default(autoincrement())
+  sessionId String   @db.VarChar(100)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 
-  // Contrainte d'unicite: empeche la meme session de compter deux fois le meme produit 
   @@unique([sessionId, productId])
+  @@index([productId])
+  @@index([createdAt])
 }

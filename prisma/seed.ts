@@ -18,8 +18,15 @@ import dotenv from "dotenv"
 dotenv.config({ path: ".dev.vars" })
 import {faker} from '@faker-js/faker'
 import bcrypt from "bcryptjs"
-import { prisma } from "@/app/lib/prisma"
 import { generateSlug } from "@/app/lib/utils"
+import { PrismaClient } from "@prisma/client"
+import { PrismaPg } from '@prisma/adapter-pg'
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL!,
+})
+
+const prisma = new PrismaClient({ adapter })
 
 
 
@@ -43,7 +50,7 @@ const main = async (): Promise<void> => {
             name: 'admin',
             surname: 'perdu',
             email: 'adminperdu@getMaxListeners.com',
-            password: await bcrypt.hash('motDePasse123', 10) //On le remplacera plus tard
+            passwordHash: await bcrypt.hash('motDePasse123', 10) //On le remplacera plus tard
         }
     })
     console.log('✅ Admin cree:', admin.email)
