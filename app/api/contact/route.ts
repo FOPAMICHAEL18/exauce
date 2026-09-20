@@ -1,29 +1,30 @@
-import { prisma } from "@/app/lib/prisma"; 
+// app/api/contact/route.ts
+import { prisma } from '@/app/lib/prisma'
+import { NextResponse } from 'next/server'
 
-const GET = async(): Promise<Response> => {
-    try {
-        //chercher la premiere entree de contact
-        const contact = await prisma.contact.findFirst()
+const GET = async (): Promise<NextResponse> => {
+  try {
+    const contact = await prisma.contact.findFirst()
 
-        //Si aucune information n'a ete configuree, on renvoie une erreur 404
-        if (!contact) {
-            return Response.json("Coordonnees non trouvees", {status: 404})
-        }
-
-        //On retourne les donnees en JSON
-        return Response.json(contact)
+    if (!contact) {
+      return NextResponse.json(
+        { success: false, message: 'Coordonnées non trouvées' },
+        { status: 404 }
+      )
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API contact:', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API contact', error)
-        }
 
-        return new Response('Erreur serveur', {status: 500})
-    }
+    return NextResponse.json({ success: true, data: contact })
+  } catch (error) {
+    console.error(
+      'Erreur API contact:',
+      error instanceof Error ? error.message : error
+    )
+
+    return NextResponse.json(
+      { success: false, message: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
 }
 
-export {GET}
+export { GET }
