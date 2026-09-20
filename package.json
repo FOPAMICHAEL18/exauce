@@ -74,7 +74,9 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "prepare": "prisma generate && husky",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:seed": "prisma db seed",
+    "db:rebuild-views": "tsx scripts/rebuild-views.ts"
   },
   "lint-staged": {
     "*": [
