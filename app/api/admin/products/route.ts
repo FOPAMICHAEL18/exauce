@@ -1,82 +1,131 @@
-//Version ameliorer de request  permetant de renvoyer une reponse et de modifier une requete avant qu'elle n'arrive a la destination finale
-import {NextRequest, NextResponse} from 'next/server'
-import { prisma } from "@/app/lib/prisma"
+// app/api/admin/products/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/app/lib/prisma'
 import { generateSlug } from '@/app/lib/utils'
+import { StockStatus } from '@prisma/client'
 
-const POST = async (request: NextRequest): Promise<Response> => {
-    try{
-        //Recuperer l'admin depuis la propriete ajoutee par le middleware 
-        const adminHeader = request.headers.get('x-admin-data')
-        const admin = adminHeader ? JSON.parse(adminHeader) : null
-        if (!admin) {
-            return Response.json({
-                success: false,
-                message: "Non autoriser"
-            }, {status: 401})
-        }
-
-        //recuperation du body
-        const body = (await request.json()) as Record<string, unknown> // Retourne des cles en string qui ont des valeurs unknown
-        const title = typeof body.title === 'string' ? body.title : ''
-        const description = typeof body.description === 'string' ? body.description : ''
-        const price = typeof body.price === 'string' ? body.price : ( typeof body.price === 'number' ? String(body.price) : '')
-        const stockStatus = typeof body.stockStatus === 'string' ? body.stockStatus : ''
-        const categoryId = typeof body.categoryId === 'string' ? body.categoryId : ( typeof body.categoryId === 'number' ? String(body.categoryId) : '')
-
-        //Validation basique
-        if (!title ||!description || !price || !categoryId || !stockStatus) {
-            return Response.json({
-                success: false,
-                message: "Titre, description, prix, status et category sont requis"
-            }, {status: 400})
-        }
-        
-        const category = await prisma.category.findUnique({
-            where: {
-                id: parseInt(categoryId, 10)
-            }
-        })
-
-        if (!category) {
-            return Response.json({
-                success: false,
-                message: "Categorie non trouver"
-            }, {status: 400})
-        }
-
-        //Transformation du titre en format adapter pour le slug  
-        const baseSlug = generateSlug(title) //Enleve tout les accents et remplace les espaces vides pas les tiret (-) et supprime tout ce qui n'est pas lettre, chiffre ou tiret
-
-        //Creation du produit 
-        const product = await prisma.product.create({
-            data: {
-                title: title.trim(),
-                slug: baseSlug,
-                description: description.trim(),
-                price: parseFloat(price),
-                stockStatus: stockStatus.trim(),
-                categoryId: parseInt(categoryId, 10)
-            } 
-        })
-
-        return Response.json({
-                success: true,
-                message: "Produit cree avec succes",
-                product
-            })
-        
+const POST = async (request: NextRequest): Promise<NextResponse> => {
+  try {
+    const adminHeader = request.headers.get('x-admin-data')
+    const admin = adminHeader ? JSON.parse(adminHeader) : null
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, message: 'Non autorisé' },
+        { status: 401 }
+      )
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API admin/products:', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API admin/products', error)
-        }
 
-        return new Response('Erreur admin/products', {status: 500})
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { success: false, message: 'Corps de requête invalide' },
+        { status: 400 }
+      )
     }
+
+    const title = typeof body.title === 'string' ? body.title.trim() : ''
+    const description = typeof body.description === 'string' ? body.description.trim() : ''
+    const price = Number(body.price)
+    const categoryId = Number(body.categoryId)
+    const rawStockStatus = typeof body.stockStatus === 'string' ? body.stockStatus : ''
+
+    // Validations
+    if (title.length < 2) {
+      return NextResponse.json(
+        { success: false, message: 'Le titre doit faire au moins 2 caractères' },
+        { status: 400 }
+      )
+    }
+    if (description.length < 5) {
+      return NextResponse.json(
+        { success: false, message: 'La description doit faire au moins 5 caractères' },
+        { status: 400 }
+      )
+    }
+    if (!Number.isFinite(price) || price < 0) {
+      return NextResponse.json(
+        { success: false, message: 'Prix invalide' },
+        { status: 400 }
+      )
+    }
+    if (!Number.isInteger(categoryId) || categoryId <= 0) {
+      return NextResponse.json(
+        { success: false, message: 'Catégorie invalide' },
+        { status: 400 }
+      )
+    }
+    if (
+      rawStockStatus !== StockStatus.disponible &&
+      rawStockStatus !== StockStatus.rupture
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Statut de stock invalide' },
+        { status: 400 }
+      )
+    }
+    const stockStatus = rawStockStatus as StockStatus
+
+    // Vérifier la catégorie
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { id: true },
+    })
+    if (!category) {
+      return NextResponse.json(
+        { success: false, message: 'Catégorie non trouvée' },
+        { status: 404 }
+      )
+    }
+
+    // Générer le slug et vérifier l'unicité
+    const slug = generateSlug(title)
+    const existingSlug = await prisma.product.findUnique({
+      where: { slug },
+      select: { id: true },
+    })
+    if (existingSlug) {
+      return NextResponse.json(
+        { success: false, message: 'Un produit avec ce nom existe déjà.' },
+        { status: 409 }
+      )
+    }
+
+    // Création
+    const product = await prisma.product.create({
+      data: {
+        title,
+        slug,
+        description,
+        price,
+        stockStatus,
+        categoryId,
+      },
+    })
+
+    return NextResponse.json(
+      { success: true, message: 'Produit créé avec succès', data: product },
+      { status: 201 }
+    )
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('Unique constraint failed')
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Un produit avec ce nom existe déjà.' },
+        { status: 409 }
+      )
+    }
+
+    console.error(
+      'Erreur API admin/products POST:',
+      error instanceof Error ? error.message : error
+    )
+    return NextResponse.json(
+      { success: false, message: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
 }
 
-export {POST}
+export { POST }

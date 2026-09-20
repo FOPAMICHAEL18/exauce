@@ -1,157 +1,120 @@
-//Version ameliorer de request  permetant de renvoyer une reponse et de modifier une requete avant qu'elle n'arrive a la destination finale
-import {NextRequest, NextResponse} from 'next/server'
-import { prisma } from "@/app/lib/prisma"
+// app/api/admin/contact/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/app/lib/prisma'
 import { validateEmail } from '@/app/lib/validators'
 
-const PUT = async (request:NextRequest): Promise<Response> => {
-    try {
-        //Recuperer l'admin depuis la propriete ajoutee par le middleware 
-        const adminHeader = request.headers.get('x-admin-data')
-        const admin = adminHeader ? JSON.parse(adminHeader) : null
-        if (!admin) {
-            return Response.json({
-                success: false,
-                message: "Non autoriser"
-            }, {status: 401}) // non autoriser
-        }
-
-        //Recuperation du contact
-        const existingContact = await prisma.contact.findFirst()
-
-        //Si aucune coordonnees n'existe en base on cree un objet vide pour eviter les erreurs
-        const defaults = {
-            address: '',
-            phone: '',
-            whatsapp: null as string | null,
-            email: '',
-            hours: null as string | null,
-            socials: null as string | null,
-            latitude: null as number | null,
-            longitude: null as number | null,
-        }
-
-        const current = existingContact || defaults
-
-        //recuperation du body
-        const body = (await request.json()) as Record<string, unknown> // Retourne des cles en string qui ont des valeurs unknown
-        const address = typeof body.address === 'string' ? body.address.trim() : current.address
-        const phone = typeof body.phone === 'string' ? body.phone.trim() : current.phone
-        const whatsapp = typeof body.whatsapp === 'string' ? body.whatsapp.trim() : current.whatsapp
-        const email = typeof body.email === 'string' ? body.email.trim() : current.email
-        const hours = typeof body.hours === 'string' ? body.hours.trim() : current.hours
-        const socials = typeof body.socials === 'string' ? body.socials.trim() : current.socials
-
-        //Gestion de la latitude et de la longitude
-        let latitude = current.latitude
-        let longitude = current.longitude
-
-        if (typeof body.latitude === 'number') {
-            latitude = body.latitude
-        }
-        else if (typeof body.latitude === 'string') {
-            const parsed = parseFloat(body.latitude as string)
-            if(!isNaN(parsed)) latitude = parsed
-        }
-
-        if (typeof body.longitude === 'number') {
-            longitude = body.longitude
-        }
-        else if (typeof body.longitude === 'string') {
-            const parsed = parseFloat(body.longitude as string)
-            if(!isNaN(parsed)) longitude = parsed
-        }
-
-        //Validation basique
-        if (!address ||!phone || !validateEmail(email)) {
-            return Response.json({
-                success: false,
-                message: "Adresse, telephone et email sont obligatoires pour afficher les coordonnees"
-            }, {status: 400})
-        }
-        
-
-
-        let updateContact 
-
-        if (existingContact) {
-            updateContact = await prisma.contact.update({
-                where: {id: existingContact.id},
-                data: {
-                    address,
-                    phone,
-                    whatsapp,
-                    email,
-                    hours,
-                    socials,
-                    latitude,
-                    longitude
-                }
-            })
-        }
-        else {
-            updateContact = await prisma.contact.create({
-                data: {
-                    address,
-                    phone,
-                    whatsapp,
-                    email,
-                    hours,
-                    socials,
-                    latitude,
-                    longitude
-                }
-            })
-        }
-        
-
-        return Response.json({
-            success: true,
-            message: 'Information de contact mis a jour avec succes',
-            data: updateContact
-        })
+const PUT = async (request: NextRequest): Promise<NextResponse> => {
+  try {
+    const adminHeader = request.headers.get('x-admin-data')
+    const admin = adminHeader ? JSON.parse(adminHeader) : null
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, message: 'Non autorisé' },
+        { status: 401 }
+      )
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API modification du contact:', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API modification du contact', error)
-        }
 
-        return Response.json({
-            success: false,
-            message: 'Erreur serveur modification du contact'
-        }, {status: 500})
+    const existingContact = await prisma.contact.findFirst()
+
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { success: false, message: 'Corps de requête invalide' },
+        { status: 400 }
+      )
     }
+
+    // Valeurs courantes (existantes ou vides pour une création)
+    const current = existingContact ?? {
+      address: '',
+      phone: '',
+      whatsapp: null,
+      email: '',
+      hours: null,
+      socials: null,
+      latitude: null,
+      longitude: null,
+    }
+
+    const address = typeof body.address === 'string' ? body.address.trim() : current.address
+    const phone = typeof body.phone === 'string' ? body.phone.trim() : current.phone
+    const email = typeof body.email === 'string' ? body.email.trim() : current.email
+    const whatsapp = typeof body.whatsapp === 'string' ? body.whatsapp.trim() || null : current.whatsapp
+    const hours = typeof body.hours === 'string' ? body.hours.trim() || null : current.hours
+    const socials = typeof body.socials === 'string' ? body.socials.trim() || null : current.socials
+
+    // Latitude / longitude
+    const parseCoord = (value: unknown, fallback: number | null): number | null => {
+      if (typeof value === 'number' && Number.isFinite(value)) return value
+      if (typeof value === 'string') {
+        const parsed = parseFloat(value)
+        if (Number.isFinite(parsed)) return parsed
+      }
+      return fallback
+    }
+
+    const latitude = parseCoord(body.latitude, current.latitude)
+    const longitude = parseCoord(body.longitude, current.longitude)
+
+    // Validation
+    if (!address || !phone) {
+      return NextResponse.json(
+        { success: false, message: 'Adresse et téléphone sont requis.' },
+        { status: 400 }
+      )
+    }
+    if (!email || !validateEmail(email)) {
+      return NextResponse.json(
+        { success: false, message: 'Adresse email invalide.' },
+        { status: 400 }
+      )
+    }
+
+    const data = { address, phone, whatsapp, email, hours, socials, latitude, longitude }
+
+    const contact = existingContact
+      ? await prisma.contact.update({ where: { id: existingContact.id }, data })
+      : await prisma.contact.create({ data })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Informations de contact mises à jour avec succès',
+      data: contact,
+    })
+  } catch (error) {
+    console.error(
+      'Erreur API contact PUT:',
+      error instanceof Error ? error.message : error
+    )
+    return NextResponse.json(
+      { success: false, message: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
 }
 
-const GET = async(): Promise<Response> => {
-    try {
-        //chercher la premiere entree de contact
-        const contact = await prisma.contact.findFirst()
+const GET = async (): Promise<NextResponse> => {
+  try {
+    const contact = await prisma.contact.findFirst()
 
-        //Si aucune information n'a ete configuree, on renvoie une erreur 404
-        if (!contact) {
-            return Response.json("Coordonnees non trouvees", {status: 404})
-        }
-
-        //On retourne les donnees en JSON
-        return Response.json(contact)
+    if (!contact) {
+      return NextResponse.json(
+        { success: false, message: 'Coordonnées non trouvées' },
+        { status: 404 }
+      )
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API contact:', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API contact', error)
-        }
 
-        return new Response('Erreur serveur', {status: 500})
-    }
+    return NextResponse.json({ success: true, data: contact })
+  } catch (error) {
+    console.error(
+      'Erreur API contact GET:',
+      error instanceof Error ? error.message : error
+    )
+    return NextResponse.json(
+      { success: false, message: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
 }
 
-
-
-export {PUT, GET}
+export { PUT, GET }

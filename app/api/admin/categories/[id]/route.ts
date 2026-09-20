@@ -1,152 +1,163 @@
-//Version ameliorer de request  permetant de renvoyer une reponse et de modifier une requete avant qu'elle n'arrive a la destination finale
-import {NextRequest, NextResponse} from 'next/server'
-import { prisma } from "@/app/lib/prisma"; 
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/app/lib/prisma'
+import { generateSlug } from '@/app/lib/utils'
 
-const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promise<Response> => {
-    try {
-        //Recuperer l'admin depuis la propriete ajoutee par le middleware 
-        const adminHeader = request.headers.get('x-admin-data')
-        const admin = adminHeader ? JSON.parse(adminHeader) : null
-        if (!admin) {
-            return Response.json({
-                success: false,
-                message: "Non autoriser"
-            }, {status: 401}) // non autoriser
-        }
-
-        //Recuperation de la l'id du produit 
-        const {id} = params
-        const categoryId = parseInt(id, 10)
-
-        if (isNaN(categoryId)) {
-            return Response.json({
-                success: false,
-                message: "Id de categorie non valide"
-            }, {status: 400}) // Requete incorrecte
-        }
-        //Verification de si la categorie existe 
-        const existingCategory = await prisma.category.findUnique({
-            where: {
-                id: categoryId
-            }
-        })
-        if (!existingCategory) {
-            return Response.json({
-                success: false,
-                message: "Categorie non trouver"
-            }, {status: 404}) // ressource demander introuvable
-        }
-
-        //recuperation du body
-        const body = (await request.json()) as Record<string, unknown> // Retourne des cles en string qui ont des valeurs unknown
-        const name = typeof body.name === 'string' ? body.name : existingCategory.name
-
-        //Validation basique
-        if (!name) {
-            return Response.json({
-                success: false,
-                message: "Le nom est requis"
-            }, {status: 400})
-        }
-        
-        //Mise a jour 
-        let slug = existingCategory.slug
-        if (name !== slug) {
-            slug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g, '') //Enleve tout les accents et remplace les espaces vides pas les tiret (-) et supprime tout ce qui n'est pas lettre, chiffre ou tiret
-        }
-
-        const updateCategory = await prisma.category.update({
-            where: {id: categoryId},
-            data: {
-                name: name.trim(),
-                slug: slug,
-            }
-        })
-
-        return Response.json({
-            success: true,
-            message: 'Categorie modifier avec succes',
-            product: updateCategory
-        })
+const PUT = async (
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> => {
+  try {
+    const adminHeader = request.headers.get('x-admin-data')
+    const admin = adminHeader ? JSON.parse(adminHeader) : null
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, message: 'Non autorisé' },
+        { status: 401 }
+      )
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API modification de la categorie:', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API modification de la categorie', error)
-        }
 
-        return Response.json({
-            success: false,
-            message: 'Erreur modification de la categorie'
-        }, {status: 500})
+    const { id } = await params  // ⚠️ await obligatoire
+    const categoryId = parseInt(id, 10)
+
+    if (Number.isNaN(categoryId)) {
+      return NextResponse.json(
+        { success: false, message: 'Id de catégorie non valide' },
+        { status: 400 }
+      )
     }
+
+    const existingCategory = await prisma.category.findUnique({
+      where: { id: categoryId },
+    })
+
+    if (!existingCategory) {
+      return NextResponse.json(
+        { success: false, message: 'Catégorie non trouvée' },
+        { status: 404 }
+      )
+    }
+
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { success: false, message: 'Corps de requête invalide' },
+        { status: 400 }
+      )
+    }
+
+    const name = typeof body.name === 'string' ? body.name.trim() : existingCategory.name
+
+    if (!name) {
+      return NextResponse.json(
+        { success: false, message: 'Le nom est requis' },
+        { status: 400 }
+      )
+    }
+
+    // Slug régénéré UNIQUEMENT si le nom change
+    let slug = existingCategory.slug
+    if (name !== existingCategory.name) {
+      slug = generateSlug(name)
+    }
+
+    const updated = await prisma.category.update({
+      where: { id: categoryId },
+      data: { name, slug },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Catégorie modifiée avec succès',
+      data: updated,
+    })
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('Unique constraint failed')
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Ce nom de catégorie existe déjà.' },
+        { status: 409 }
+      )
+    }
+
+    console.error(
+      'Erreur API modification catégorie:',
+      error instanceof Error ? error.message : error
+    )
+
+    return NextResponse.json(
+      { success: false, message: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
 }
 
-
-const DELETE = async (request:NextRequest, {params}: {params: {id: string}}): Promise<Response> => {
-    try {
-        //Recuperer l'admin depuis la propriete ajoutee par le middleware 
-        const adminHeader = request.headers.get('x-admin-data')
-        const admin = adminHeader ? JSON.parse(adminHeader) : null
-        if (!admin) {
-            return Response.json({
-                success: false,
-                message: "Non autoriser"
-            }, {status: 401}) // non autoriser
-        }
-
-        //Recuperation de la l'id du produit 
-        const {id} = params
-        const categoryId = parseInt(id, 10)
-
-        if (isNaN(categoryId)) {
-            return Response.json({
-                success: false,
-                message: "Id de la categorie non valide"
-            }, {status: 400}) // Requete incorrecte
-        }
-        //Verification de si le produit existe 
-        const existingCategory = await prisma.category.findUnique({
-            where: {
-                id: categoryId
-            }
-        })
-        if (!existingCategory) {
-            return Response.json({
-                success: false,
-                message: "Categorie non trouver"
-            }, {status: 404}) // ressource demander introuvable
-        }
-
-        
-
-        //Suppression du produit
-        await prisma.category.delete({
-            where: {id: categoryId},
-        })
-
-        return Response.json({
-            success: true,
-            message: `Produit ${existingCategory.name} supprimer avec succes`,
-        })
+const DELETE = async (
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> => {
+  try {
+    const adminHeader = request.headers.get('x-admin-data')
+    const admin = adminHeader ? JSON.parse(adminHeader) : null
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, message: 'Non autorisé' },
+        { status: 401 }
+      )
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API suppression de la categorie:', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API suppression de la categorie', error)
-        }
 
-        return Response.json({
-            success: false,
-            message: 'Erreur suppression de la categorie'
-        }, {status: 500})
+    const { id } = await params
+    const categoryId = parseInt(id, 10)
+
+    if (Number.isNaN(categoryId)) {
+      return NextResponse.json(
+        { success: false, message: 'Id de catégorie non valide' },
+        { status: 400 }
+      )
     }
+
+    const existing = await prisma.category.findUnique({
+      where: { id: categoryId },
+      include: {
+        _count: { select: { product: true } },
+      },
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, message: 'Catégorie non trouvée' },
+        { status: 404 }
+      )
+    }
+
+    // 🔒 Protection : refuse la suppression si des produits y sont liés
+    if (existing._count.product > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Impossible : ${existing._count.product} produit(s) utilisent cette catégorie.`,
+        },
+        { status: 409 }
+      )
+    }
+
+    await prisma.category.delete({ where: { id: categoryId } })
+
+    return NextResponse.json({
+      success: true,
+      message: `Catégorie "${existing.name}" supprimée avec succès`,
+    })
+  } catch (error) {
+    console.error(
+      'Erreur API suppression catégorie:',
+      error instanceof Error ? error.message : error
+    )
+    return NextResponse.json(
+      { success: false, message: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
 }
 
-export {PUT, DELETE}
+export { PUT, DELETE }

@@ -1,61 +1,94 @@
-//Version ameliorer de request  permetant de renvoyer une reponse et de modifier une requete avant qu'elle n'arrive a la destination finale
-import {NextRequest, NextResponse} from 'next/server'
-import { prisma } from "@/app/lib/prisma"; 
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/app/lib/prisma'
+import { validateAuthor } from '@/app/lib/validators'
+import { generateSlug } from '@/app/lib/utils'
 
 const POST = async (request: NextRequest): Promise<NextResponse> => {
-    try{
-        //Recuperer l'admin depuis la propriete ajoutee par le middleware 
-        const adminHeader = request.headers.get('x-admin-data')
-        const admin = adminHeader ? JSON.parse(adminHeader) : null
-        if (!admin) {
-            return NextResponse.json({
-                success: false,
-                message: "Non autoriser"
-            }, {status: 401})
-        }
+  try {
+    // Vérification admin (posé par le middleware)
+    const adminHeader = request.headers.get('x-admin-data')
+    const admin = adminHeader ? JSON.parse(adminHeader) : null
 
-        //recuperation du body
-        const body = (await request.json()) as Record<string, unknown> // Retourne des cles en string qui ont des valeurs unknown
-        const name = typeof body.name === 'string' ? body.name : ''
-
-        //Validation basique
-        if (!name) {
-            return NextResponse.json({
-                success: false,
-                message: "Le nom est requis"
-            }, {status: 400})
-        }
-        
-
-        //Transformation du nom en format adapter pour le slug  
-        const baseSlug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g, '') //Enleve tout les accents et remplace les espaces vides pas les tiret (-) et supprime tout ce qui n'est pas lettre, chiffre ou tiret
-
-        //Creation du produit 
-        const category = await prisma.category.create({
-            data: {
-                name: name.trim(),
-                slug: baseSlug,
-            } 
-        })
-
-        return NextResponse.json({
-                success: true,
-                message: "Categorie cree avec succes",
-                category
-            })
-        
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, message: 'Non autorisé' },
+        { status: 401 }
+      )
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API admin/categories:', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API admin/categories', error)
-        }
 
-        return new NextResponse('Erreur admin/categories', {status: 500})
+    // Lecture du body
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { success: false, message: 'Corps de requête invalide' },
+        { status: 400 }
+      )
     }
+
+    const name = typeof body.name === 'string' ? body.name.trim() : ''
+
+    // Validation
+    if (!validateAuthor(name)) {
+      return NextResponse.json(
+        { success: false, message: 'Le nom doit faire au moins 2 caractères' },
+        { status: 400 }
+      )
+    }
+
+    // Génération du slug
+    const baseSlug = generateSlug(name)
+
+    // Vérification des doublons (nom OU slug)
+    const existing = await prisma.category.findFirst({
+      where: {
+        OR: [{ name }, { slug: baseSlug }],
+      },
+      select: { id: true },
+    })
+
+    if (existing) {
+      return NextResponse.json(
+        { success: false, message: 'Cette catégorie existe déjà.' },
+        { status: 409 }
+      )
+    }
+
+    // Création
+    const category = await prisma.category.create({
+      data: { name, slug: baseSlug },
+    })
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Catégorie créée avec succès',
+        data: category,
+      },
+      { status: 201 }
+    )
+  } catch (error) {
+    // Race condition : deux requêtes simultanées ont créé la même catégorie
+    if (
+      error instanceof Error &&
+      error.message.includes('Unique constraint failed')
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Cette catégorie existe déjà.' },
+        { status: 409 }
+      )
+    }
+
+    console.error(
+      'Erreur API admin/categories POST:',
+      error instanceof Error ? error.message : error
+    )
+
+    return NextResponse.json(
+      { success: false, message: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
 }
 
-export {POST}
+export { POST }

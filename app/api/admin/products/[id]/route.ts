@@ -1,214 +1,233 @@
-//Version ameliorer de request  permetant de renvoyer une reponse et de modifier une requete avant qu'elle n'arrive a la destination finale
-import {NextRequest, NextResponse} from 'next/server'
-import { prisma } from "@/app/lib/prisma"
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/app/lib/prisma'
 import { generateSlug } from '@/app/lib/utils'
+import { StockStatus } from '@prisma/client'
 
-const PUT = async (request:NextRequest, {params}: {params: {id: string}}): Promise<Response> => {
-    try {
-        //Recuperer l'admin depuis la propriete ajoutee par le middleware 
-        const adminHeader = request.headers.get('x-admin-data')
-        const admin = adminHeader ? JSON.parse(adminHeader) : null
-        if (!admin) {
-            return Response.json({
-                success: false,
-                message: "Non autoriser"
-            }, {status: 401}) // non autoriser
-        }
-
-        //Recuperation de la l'id du produit 
-        const {id} = params
-        const productId = parseInt(id, 10)
-
-        if (isNaN(productId)) {
-            return Response.json({
-                success: false,
-                message: "Id de produit non valide"
-            }, {status: 400}) // Requete incorrecte
-        }
-        //Verification de si le produit existe 
-        const existingProduct = await prisma.product.findUnique({
-            where: {
-                id: productId
-            }
-        })
-        if (!existingProduct) {
-            return Response.json({
-                success: false,
-                message: "Produit non trouver"
-            }, {status: 404}) // ressource demander introuvable
-        }
-
-        //recuperation du body
-        const body = (await request.json()) as Record<string, unknown> // Retourne des cles en string qui ont des valeurs unknown
-        const title = typeof body.title === 'string' ? body.title : existingProduct.title
-        const description = typeof body.description === 'string' ? body.description : existingProduct.description
-        const price = typeof body.price === 'string' ? body.price : ( typeof body.price === 'number' ? String(body.price) : String(existingProduct.price))
-        const stockStatus = typeof body.stockStatus === 'string' ? body.stockStatus : existingProduct.stockStatus
-        const categoryId = typeof body.categoryId === 'string' ? body.categoryId : ( typeof body.categoryId === 'number' ? String(body.categoryId) : String(existingProduct.categoryId))
-
-        //Validation basique
-        if (!title ||!description || !price || !categoryId || !stockStatus) {
-            return Response.json({
-                success: false,
-                message: "Titre, description, prix, status et category sont requis"
-            }, {status: 400})
-        }
-        
-        const category = await prisma.category.findUnique({
-            where: {
-                id: parseInt(categoryId, 10)
-            }
-        })
-
-        if (!category) {
-            return Response.json({
-                success: false,
-                message: "Categorie non trouver"
-            }, {status: 400})
-        }
-
-        //Mise a jour 
-        let slug = existingProduct.slug
-        if (title !== existingProduct.title) {
-            slug = slug = generateSlug(title) //Enleve tout les accents et remplace les espaces vides pas les tiret (-) et supprime tout ce qui n'est pas lettre, chiffre ou tiret
-        }
-
-        const updateProduct = await prisma.product.update({
-            where: {id: productId},
-            data: {
-                title: title.trim(),
-                slug: slug,
-                description: description.trim(),
-                price: parseFloat(price),
-                stockStatus: stockStatus.trim(),
-                categoryId: parseInt(categoryId, 10)
-            }
-        })
-
-        return Response.json(updateProduct)
+const PUT = async (
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> => {
+  try {
+    const adminHeader = request.headers.get('x-admin-data')
+    const admin = adminHeader ? JSON.parse(adminHeader) : null
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, message: 'Non autorisé' },
+        { status: 401 }
+      )
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API modification du produit:', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API modification du produit', error)
-        }
 
-        return Response.json({
-            success: false,
-            message: 'Erreur modification du produit'
-        }, {status: 500})
+    const { id } = await params
+    const productId = parseInt(id, 10)
+
+    if (Number.isNaN(productId)) {
+      return NextResponse.json(
+        { success: false, message: 'Id de produit non valide' },
+        { status: 400 }
+      )
     }
+
+    const existingProduct = await prisma.product.findUnique({
+      where: { id: productId },
+    })
+
+    if (!existingProduct) {
+      return NextResponse.json(
+        { success: false, message: 'Produit non trouvé' },
+        { status: 404 }
+      )
+    }
+
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { success: false, message: 'Corps de requête invalide' },
+        { status: 400 }
+      )
+    }
+
+    const title = typeof body.title === 'string' ? body.title.trim() : existingProduct.title
+    const description = typeof body.description === 'string' ? body.description.trim() : existingProduct.description
+    const price = Number(body.price)
+    const categoryId = Number(body.categoryId)
+
+    // 🎯 Validation stricte de stockStatus
+    const rawStockStatus = typeof body.stockStatus === 'string' ? body.stockStatus : ''
+    const stockStatus: StockStatus =
+    rawStockStatus === StockStatus.disponible || rawStockStatus === StockStatus.rupture
+        ? (rawStockStatus as StockStatus)
+        : existingProduct.stockStatus
+
+
+
+    if (!Number.isFinite(price) || price < 0) {
+      return NextResponse.json(
+        { success: false, message: 'Prix invalide' },
+        { status: 400 }
+      )
+    }
+
+    if (!Number.isInteger(categoryId) || categoryId <= 0) {
+      return NextResponse.json(
+        { success: false, message: 'Catégorie invalide' },
+        { status: 400 }
+      )
+    }
+
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+    })
+
+    if (!category) {
+      return NextResponse.json(
+        { success: false, message: 'Catégorie non trouvée' },
+        { status: 404 }
+      )
+    }
+
+    // Slug régénéré uniquement si le titre change
+    const slug = title !== existingProduct.title ? generateSlug(title) : existingProduct.slug
+
+    const updated = await prisma.product.update({
+      where: { id: productId },
+      data: {
+        title,
+        slug,
+        description,
+        price,
+        stockStatus,
+        categoryId,
+      },
+    })
+
+    return NextResponse.json({ success: true, data: updated })
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('Unique constraint failed')
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Un produit avec ce slug existe déjà.' },
+        { status: 409 }
+      )
+    }
+
+    console.error(
+      'Erreur API modification produit:',
+      error instanceof Error ? error.message : error
+    )
+    return NextResponse.json(
+      { success: false, message: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
 }
 
-
-const DELETE = async (request:NextRequest, {params}: {params: {id: string}}): Promise<Response> => {
-    try {
-        //Recuperer l'admin depuis la propriete ajoutee par le middleware 
-        const adminHeader = request.headers.get('x-admin-data')
-        const admin = adminHeader ? JSON.parse(adminHeader) : null
-        if (!admin) {
-            return Response.json({
-                success: false,
-                message: "Non autoriser"
-            }, {status: 401}) // non autoriser
-        }
-
-        //Recuperation de la l'id du produit 
-        const {id} = params
-        const productId = parseInt(id, 10)
-
-        if (isNaN(productId)) {
-            return Response.json({
-                success: false,
-                message: "Id de produit non valide"
-            }, {status: 400}) // Requete incorrecte
-        }
-        //Verification de si le produit existe 
-        const existingProduct = await prisma.product.findUnique({
-            where: {
-                id: productId
-            }
-        })
-        if (!existingProduct) {
-            return Response.json({
-                success: false,
-                message: "Produit non trouver"
-            }, {status: 404}) // ressource demander introuvable
-        }
-
-        
-
-        //Suppression du produit
-        await prisma.product.delete({
-            where: {id: productId},
-        })
-
-        return Response.json({
-            success: true,
-            message: `Produit ${existingProduct.title} supprimer avec succes`,
-        })
+const DELETE = async (
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> => {
+  try {
+    const adminHeader = request.headers.get('x-admin-data')
+    const admin = adminHeader ? JSON.parse(adminHeader) : null
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, message: 'Non autorisé' },
+        { status: 401 }
+      )
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur API suppression du produit:', error.message)
-        }
-        else {
-            console.log('Erreur inconnu API suppression du produit', error)
-        }
 
-        return Response.json({
-            success: false,
-            message: 'Erreur suppression du produit'
-        }, {status: 500})
+    const { id } = await params
+    const productId = parseInt(id, 10)
+
+    if (Number.isNaN(productId)) {
+      return NextResponse.json(
+        { success: false, message: 'Id de produit non valide' },
+        { status: 400 }
+      )
     }
+
+    const existingProduct = await prisma.product.findUnique({
+      where: { id: productId },
+    })
+
+    if (!existingProduct) {
+      return NextResponse.json(
+        { success: false, message: 'Produit non trouvé' },
+        { status: 404 }
+      )
+    }
+
+    await prisma.product.delete({ where: { id: productId } })
+
+    return NextResponse.json({
+      success: true,
+      message: `Produit "${existingProduct.title}" supprimé avec succès`,
+    })
+  } catch (error) {
+    console.error(
+      'Erreur API suppression produit:',
+      error instanceof Error ? error.message : error
+    )
+    return NextResponse.json(
+      { success: false, message: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
 }
 
-//afficher les produits 
-const GET = async (request:NextRequest, {params}: {params: {id: string}}): Promise<Response> => {
-    try {
-        //Recuperer l'admin depuis la propriete ajoutee par le middleware 
-        const adminHeader = request.headers.get('x-admin-data')
-        const admin = adminHeader ? JSON.parse(adminHeader) : null
-        if (!admin) {
-            return Response.json({
-                success: false,
-                message: "Non autoriser"
-            }, {status: 401}) // non autoriser
-        }
-
-        //Recuperation de la l'id du produit 
-        const {id} = params
-        const productId = parseInt(id, 10)
-
-        const products = await prisma.product.findUnique({
-            where: {id: productId},
-            include: {
-                category: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                }
-            },
-        })
-        return Response.json(products)
+const GET = async (
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> => {
+  try {
+    const adminHeader = request.headers.get('x-admin-data')
+    const admin = adminHeader ? JSON.parse(adminHeader) : null
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, message: 'Non autorisé' },
+        { status: 401 }
+      )
     }
-    catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur GET :', error.message)
-        }
-        else {
-            console.log('Erreur inconnu GET', error)
-        }
 
-        return new Response('Erreur serveur', {status: 500})
-        
+    const { id } = await params
+    const productId = parseInt(id, 10)
+
+    // 🐛 BUG CORRIGÉ : avant, pas de check isNaN → Prisma recevait NaN
+    if (Number.isNaN(productId)) {
+      return NextResponse.json(
+        { success: false, message: 'Id de produit non valide' },
+        { status: 400 }
+      )
     }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        category: {
+          select: { id: true, name: true },
+        },
+      },
+    })
+
+    if (!product) {
+      return NextResponse.json(
+        { success: false, message: 'Produit non trouvé' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ success: true, data: product })
+  } catch (error) {
+    console.error(
+      'Erreur GET produit:',
+      error instanceof Error ? error.message : error
+    )
+    return NextResponse.json(
+      { success: false, message: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
 }
 
-export {PUT, DELETE, GET}
+export { PUT, DELETE, GET }
