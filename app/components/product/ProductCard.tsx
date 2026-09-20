@@ -17,7 +17,7 @@ const ProductCard = ({product} : ProductCardProps) => {
     return (
         <Link
             href={`/Catalogue/${product.slug}`}
-            className="group bg-white rounded-sm border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:-translate-y-2 hover:shadow-lg transition-all duration-300 hover:z-10 will-change-transform"
+            className="group bg-white rounded-md border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:-translate-y-2 hover:shadow-lg transition-all duration-300 hover:z-10 will-change-transform"
         >
             {/* 1. Zone Image : Hauteur strictement bloquée à 200px */}
             <div className="relative w-full h-50 shrink-0 bg-[#EAEFF2] flex items-center justify-center overflow-hidden">
