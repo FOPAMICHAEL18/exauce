@@ -70,11 +70,9 @@ const buildMapSrc = (
   return 'https://maps.google.com/maps?q=0,0&z=2&output=embed'
 }
 
-export {generateSlug, formatDate, formatPrice, buildMapSrc}
-
 //Pagination
 // app/lib/utils.ts
-export const buildPageList = (
+const buildPageList = (
   current: number,
   total: number
 ): (number | '…')[] => {
@@ -91,3 +89,15 @@ export const buildPageList = (
 
   return pages
 }
+
+// Verification du type 
+const parseNumberField = (value: unknown): number => {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string' && value.trim() !== '') {
+    return Number(value)
+  }
+  return Number.NaN
+}
+
+export {generateSlug, formatDate, formatPrice, buildMapSrc, buildPageList, parseNumberField}
+

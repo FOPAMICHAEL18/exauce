@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateSlug, formatPrice, formatDate, buildMapSrc, buildPageList } from './utils'
+import { generateSlug, formatPrice, formatDate, buildMapSrc, buildPageList, parseNumberField } from './utils'
 
 //Test de generateSlug
 describe('generateSlug', () => {
@@ -284,6 +284,107 @@ describe('buildPageList', () => {
     it('ne contient aucun doublon de numéro', () => {
       const numbers = buildPageList(10, 20).filter((p): p is number => p !== '…')
       expect(new Set(numbers).size).toBe(numbers.length)
+    })
+  })
+})
+
+describe('parseNumberField', () => {
+  describe('valeurs numériques valides', () => {
+    it('retourne le nombre tel quel pour un number entier', () => {
+      expect(parseNumberField(5)).toBe(5)
+      expect(parseNumberField(0)).toBe(0)
+      expect(parseNumberField(-3)).toBe(-3)
+    })
+
+    it('retourne le nombre tel quel pour un number décimal', () => {
+      expect(parseNumberField(3.5)).toBe(3.5)
+      expect(parseNumberField(-0.25)).toBe(-0.25)
+    })
+
+    it('convertit une chaîne numérique simple', () => {
+      expect(parseNumberField('5')).toBe(5)
+      expect(parseNumberField('3.5')).toBe(3.5)
+      expect(parseNumberField('-10')).toBe(-10)
+    })
+
+    it('convertit une chaîne numérique avec espaces autour', () => {
+      expect(parseNumberField('  42  ')).toBe(42)
+    })
+
+    it('accepte Infinity et -Infinity (comportement JS de Number)', () => {
+      // Number.isFinite les rejettera ailleurs, mais parseNumberField
+      // ne fait que la conversion — c'est le rôle des validateurs.
+      expect(parseNumberField(Infinity)).toBe(Infinity)
+      expect(parseNumberField('-Infinity')).toBe(-Infinity)
+    })
+  })
+
+  describe('valeurs qui doivent donner NaN', () => {
+    it('rejette null', () => {
+      expect(parseNumberField(null)).toBeNaN()
+    })
+
+    it('rejette undefined', () => {
+      expect(parseNumberField(undefined)).toBeNaN()
+    })
+
+    it('rejette un booléen true', () => {
+      // Number(true) === 1 en JS : c'est exactement le piège qu'on évite.
+      expect(parseNumberField(true)).toBeNaN()
+    })
+
+    it('rejette un booléen false', () => {
+      expect(parseNumberField(false)).toBeNaN()
+    })
+
+    it('rejette un tableau vide', () => {
+      // Number([]) === 0 : autre piège classique.
+      expect(parseNumberField([])).toBeNaN()
+    })
+
+    it('rejette un tableau à un élément numérique', () => {
+      // Number([5]) === 5 : encore un piège.
+      expect(parseNumberField([5])).toBeNaN()
+    })
+
+    it('rejette un objet quelconque', () => {
+      expect(parseNumberField({})).toBeNaN()
+    })
+
+    it('rejette une chaîne vide', () => {
+      expect(parseNumberField('')).toBeNaN()
+    })
+
+    it('rejette une chaîne ne contenant que des espaces', () => {
+      expect(parseNumberField('   ')).toBeNaN()
+    })
+
+    it('rejette une chaîne non numérique', () => {
+      expect(parseNumberField('abc')).toBeNaN()
+      expect(parseNumberField('12abc')).toBeNaN()
+    })
+
+    it('rejette une chaîne numérique "exotique" (hex, binaire, notation)', () => {
+      // Attention : Number('0x10') === 16, Number('1e3') === 1000.
+      // Selon ta politique métier, tu voudras peut-être les rejeter.
+      // Ici on teste le comportement actuel : Number les accepte.
+      expect(parseNumberField('0x10')).toBe(16)
+      expect(parseNumberField('1e3')).toBe(1000)
+    })
+
+    it('rejette un BigInt', () => {
+      // typeof BigInt !== 'number' et !== 'string' → NaN.
+      expect(parseNumberField(BigInt(10))).toBeNaN()
+    })
+
+    it('rejette un Symbol', () => {
+      // Ne pas mettre un Symbol dans Number() sinon ça throw.
+      // Le type guard du haut renvoie NaN avant.
+      expect(parseNumberField(Symbol('x'))).toBeNaN()
+    })
+
+    it('rejette une fonction', () => {
+      expect(parseNumberField(() => 5)).toBeNaN()
     })
   })
 })
