@@ -1,71 +1,88 @@
-//Version ameliorer de request  permetant de renvoyer une reponse et de modifier une requete avant qu'elle n'arrive a la destination finale
-import {NextRequest, NextResponse} from 'next/server'
-import  jwt  from 'jsonwebtoken'
+import { NextRequest, NextResponse } from 'next/server'
+import jwt from 'jsonwebtoken'
+import { type AdminData } from '@/app/lib/admin-auth'
 
-//Renvoit une valeur string ou undefined
 const JWT_SECRET = process.env.JWT_SECRET
 
-// Empeche le JWT_SECRET de renvoyer une valeur undefined pour que typescript ne me derange plus 
 if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET est manquant dans les variables d'environnement")
+  throw new Error("JWT_SECRET est manquant dans les variables d'environnement")
+}
+
+// Vérifie que le payload décodé a bien la forme AdminData.
+// JSON.parse du header ne suffit pas : n’importe quel JSON passe.
+function isAdminPayload(value: unknown): value is AdminData {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false
+  }
+  const { id, email } = value as Record<string, unknown>
+  return typeof id === 'number' && typeof email === 'string'
 }
 
 const proxy = (request: NextRequest): NextResponse => {
-    console.log("middleware", request.url)
-    //Recupere le chemin de la requete
-    const path = request.nextUrl.pathname
-    //Si c'est la route du login on laisse passer sans token 
-    if (path === '/api/admin/login') {
-        console.log('🔓 Login public: acces autorise')
-        return NextResponse.next()
-    }
-    // Recupere le token depuis l'en-tete Authorization
-    const authHeader = request.headers.get('authorization')
-    //Verifier qu'il est present et bien formater
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return NextResponse.json({
-            success: false,
-            message: "Token manquant ou invalide"
-        }, {status: 401})
-    }
-    //Extraire le token sans le bearer
-    const token = authHeader.split(' ')[1]
+  const path = request.nextUrl.pathname
 
-    try {
-        //Verifier et decoder le token
-        const decoded = jwt.verify(token, JWT_SECRET)
+  // Route publique : login.
+  if (path === '/api/admin/login') {
+    return NextResponse.next()
+  }
 
-        // Copier une instance de header vu que celle de nextRequest est immuable
-        const  requestHeader = new Headers(request.headers)
-        //copier decode transformer en chaine dans le header car il ne prends que les chaines
-        requestHeader.set('x-admin-data', JSON.stringify(decoded))
-        
-        
-        //Continuer vers la route
-        return NextResponse.next({
-            request: {
-                headers: requestHeader
-            }
-        })
-    }
-     catch(error) {
-        //On verifie si c'est une erreur javascript
-        if (error instanceof Error) {
-            console.log('Erreur middleware:', error.message)
-        }
-        else {
-            console.log('Erreur middleware', error)
-        }
+  const authHeader = request.headers.get('authorization')
 
-        return NextResponse.json({
-            success: false,
-            message: "Token invalide ou expire"
-        }, {status: 401})
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return NextResponse.json(
+      { success: false, message: 'Token manquant ou invalide' },
+      { status: 401 },
+    )
+  }
+
+  const token = authHeader.split(' ')[1]
+
+  if (!token) {
+    return NextResponse.json(
+      { success: false, message: 'Token manquant ou invalide' },
+      { status: 401 },
+    )
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+
+    // On refuse tout payload qui n’a pas la forme AdminData.
+    if (!isAdminPayload(decoded)) {
+      return NextResponse.json(
+        { success: false, message: 'Token invalide ou expiré' },
+        { status: 401 },
+      )
     }
+
+    // On clone les headers pour pouvoir les modifier (ceux de
+    // NextRequest sont immuables).
+    const requestHeaders = new Headers(request.headers)
+
+    // Sécurité : on supprime tout header client avant de poser le nôtre.
+    // Comme ça, même si le client a envoyé un faux `x-admin-data`, il
+    // est écrasé — et on reste protégé si un jour on utilise autre
+    // chose que .set().
+    requestHeaders.delete('x-admin-data')
+    requestHeaders.set('x-admin-data', JSON.stringify(decoded))
+
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    })
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Erreur middleware:', error instanceof Error ? error.message : error)
+    }
+
+    return NextResponse.json(
+      { success: false, message: 'Token invalide ou expiré' },
+      { status: 401 },
+    )
+  }
 }
 
 const config = {
-    matcher: '/api/admin/:path*',
+  matcher: '/api/admin/:path*',
 }
 
-export {proxy, config}
+export { proxy, config }
