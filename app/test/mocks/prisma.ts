@@ -1,12 +1,8 @@
-// app/mocks/prisma.ts
+import type { PrismaClient } from '@prisma/client';
+import { mockDeep, mockReset, type DeepMockProxy } from 'vitest-mock-extended';
 
-import { PrismaClient } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
-
-// On crée un mock profond de PrismaClient
 export const prismaMock = mockDeep<PrismaClient>() as unknown as DeepMockProxy<PrismaClient>;
 
-// Réinitialise le mock avant chaque test (à appeler dans beforeEach)
-export function resetPrismaMock() {
+export function resetPrismaMock(): void {
   mockReset(prismaMock);
 }

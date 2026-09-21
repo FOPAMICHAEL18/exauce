@@ -72,7 +72,9 @@ export default defineConfig({
       'next/navigation': path.resolve(import.meta.dirname, './app/test/mocks/next-navigation.ts'),
       'next/link': path.resolve(import.meta.dirname, './app/test/mocks/next-link.tsx'),
       'next/image': path.resolve(import.meta.dirname, './app/test/mocks/next-image.tsx'),
-      'next/server': path.resolve(import.meta.dirname, './app/test/mocks/next-server.ts')
+      'next/server': path.resolve(import.meta.dirname, './app/test/mocks/next-server.ts'),
+      'next/headers': path.resolve(import.meta.dirname, './app/test/mocks/next-headers.ts'),
+      'server-only': path.resolve(import.meta.dirname, './app/test/mocks/server-only.ts')
     },
   },
 })
