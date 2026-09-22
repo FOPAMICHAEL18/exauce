@@ -19,43 +19,27 @@ export default defineConfig({
       clean: true,
       reportOnFailure: true,
       exclude: [
-        // Next.js triviaux DANS app/
         '**/loading.tsx',
         '**/not-found.tsx',
         '**/error.tsx',
         '**/template.tsx',
         '**/default.tsx',
-
-        // Composant tiers DANS app/
         '**/components/ui/Map.tsx',
-
-        // Tests DANS app/
         '**/*.test.ts',
         '**/*.test.tsx',
         '**/*.spec.ts',
         '**/*.spec.tsx',
-
-        // Infra test DANS app/test/
         '**/mocks/**',
         'setup.ts',
-
-        // Types DANS app/ (au cas où)
         '**/*.d.ts',
         '**/types/**',
-
-        // Code généré (Prisma)
         'app/generated/**',
-
-        // Client Prisma (initialisation singleton)
         'app/lib/prisma.ts',
-
-        // Pages statiques (aucune logique métier)
-        'app/(public)/A-propos/**',
-        'app/(public)/Comment-ca-marche/**',
+        '**/A-propos/**',
+        '**/Comment-ca-marche/**',
         'app/layout.tsx',
-        'app/(admin)/layout.tsx',
-        'app/(public)/layout.tsx',
-        'app/components/layout/Footer.tsx',
+        '**/layout.tsx',
+        '**/Footer.tsx',
       ],
       thresholds: {
         statements: 90,

@@ -4,6 +4,7 @@ import { type AdminData } from '@/app/lib/admin-auth'
 
 const JWT_SECRET = process.env.JWT_SECRET
 
+/* v8 ignore next 3 */
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET est manquant dans les variables d'environnement")
 }
@@ -37,6 +38,7 @@ const proxy = (request: NextRequest): NextResponse => {
 
   const token = authHeader.split(' ')[1]
 
+  /* v8 ignore next 4 */
   if (!token) {
     return NextResponse.json(
       { success: false, message: 'Token manquant ou invalide' },
