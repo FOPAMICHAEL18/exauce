@@ -68,7 +68,7 @@ function firstProps<T>(mockFn: unknown): T {
 }
 
 function getStatCardProps() {
-  return vi.mocked(StatCard).mock.calls.map((c) => c[0])
+  return vi.mocked(StatCard).mock.calls.map((c: unknown[]) => c[0] as { statName: string; statValue: number | string })
 }
 
 function mockDefaults(overrides: {

@@ -99,7 +99,7 @@ function makeTopProduct(overrides: Partial<TopProduct> = {}): TopProduct {
 
 // Helpers typés pour récupérer les props passées aux enfants mockés.
 function getStatCardProps() {
-  return vi.mocked(StatCard).mock.calls.map((c) => c[0])
+  return vi.mocked(StatCard).mock.calls.map((c: unknown[]) => c[0] as { statName: string; statValue: number | string })
 }
 
 function getRecentReviewProps() {

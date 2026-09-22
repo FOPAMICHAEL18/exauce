@@ -300,7 +300,7 @@ describe('Page Admin Products', () => {
 
     await renderPage()
 
-    const statCardProps = vi.mocked(StatCard).mock.calls.map((c) => c[0])
+    const statCardProps = vi.mocked(StatCard).mock.calls.map((c: unknown[]) => c[0] as { statName: string; statValue: number | string })
     expect(statCardProps).toHaveLength(2)
     expect(statCardProps[0]).toEqual({ statName: 'TOTAL', statValue: 42 })
     expect(statCardProps[1]).toEqual({ statName: 'PUBLIES', statValue: 30 })
