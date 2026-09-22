@@ -3,24 +3,20 @@ import { renderHook, act } from '@testing-library/react';
 import { useAuth } from './useAuth';
 import * as apiModule from '../lib/api';
 
-// Mock du router Next.js
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: mockPush,
-  }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
-// Mock du module API
 vi.mock('../lib/api', () => ({
   apiCall: vi.fn(),
 }));
 
-// Utilisateur de test et création d'un vrai mock JWT décodable via atob()
-const mockUser = { id: 1, email: 'admin@test.com', name: 'Admin' };
+// Utilisateur de test + JWT valide décodable par notre base64url decoder.
+const mockAdmin = { id: 1, email: 'admin@test.com', name: 'Admin' };
 const mockHeader = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-const mockPayload = btoa(JSON.stringify(mockUser));
-const mockValidToken = `${mockHeader}.${mockPayload}.signature`;
+const mockPayload = btoa(JSON.stringify(mockAdmin));
+const mockValidToken = `${mockHeader}.${mockPayload}.signature`
 
 describe('useAuth', () => {
   beforeEach(() => {
@@ -32,7 +28,7 @@ describe('useAuth', () => {
     const { result } = renderHook(() => useAuth());
 
     expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
+    expect(result.current.admin).toBeNull();
     expect(result.current.loading).toBe(false);
   });
 
@@ -42,7 +38,7 @@ describe('useAuth', () => {
     const { result } = renderHook(() => useAuth());
 
     expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.user).toEqual(mockUser);
+    expect(result.current.admin).toEqual(mockAdmin);
     expect(result.current.loading).toBe(false);
   });
 
@@ -52,31 +48,33 @@ describe('useAuth', () => {
     const { result } = renderHook(() => useAuth());
 
     expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
+    expect(result.current.admin).toBeNull();
     expect(localStorage.getItem('adminToken')).toBeNull();
   });
 
-  it('connecte l’utilisateur avec succès et redirige', async () => {
+  it('connecte l’utilisateur avec succès', async () => {
     vi.mocked(apiModule.apiCall).mockResolvedValueOnce({
       success: true,
       data: {
         token: mockValidToken,
-        user: mockUser,
+        // ⚠️ le serveur renvoie `admin`, pas `user`
+        admin: mockAdmin,
       },
     });
 
     const { result } = renderHook(() => useAuth());
 
-    let loginResult: any;
+    let loginResult: { success: boolean; message?: string } | undefined;
     await act(async () => {
       loginResult = await result.current.login('admin@test.com', 'password123');
     });
 
     expect(loginResult).toEqual({ success: true });
     expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.user).toEqual(mockUser);
+    expect(result.current.admin).toEqual(mockAdmin);
     expect(localStorage.getItem('adminToken')).toBe(mockValidToken);
-    expect(mockPush).toHaveBeenCalledWith('/Admin/Dashboard');
+    // ℹ️ Plus de router.push ici : c’est LoginForm qui redirige désormais.
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('gère un échec de connexion renvoyé par l’API', async () => {
@@ -87,7 +85,7 @@ describe('useAuth', () => {
 
     const { result } = renderHook(() => useAuth());
 
-    let loginResult: any;
+    let loginResult: { success: boolean; message?: string } | undefined;
     await act(async () => {
       loginResult = await result.current.login('admin@test.com', 'wrongpassword');
     });
@@ -105,7 +103,7 @@ describe('useAuth', () => {
 
     const { result } = renderHook(() => useAuth());
 
-    let loginResult: any;
+    let loginResult: { success: boolean; message?: string } | undefined;
     await act(async () => {
       loginResult = await result.current.login('admin@test.com', 'wrongpassword');
     });
@@ -119,7 +117,7 @@ describe('useAuth', () => {
 
     const { result } = renderHook(() => useAuth());
 
-    let loginResult: any;
+    let loginResult: { success: boolean; message?: string } | undefined;
     await act(async () => {
       loginResult = await result.current.login('admin@test.com', 'password123');
     });
@@ -139,8 +137,26 @@ describe('useAuth', () => {
     });
 
     expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
+    expect(result.current.admin).toBeNull();
     expect(localStorage.getItem('adminToken')).toBeNull();
     expect(mockPush).toHaveBeenCalledWith('/Admin/Login');
+  })
+
+  it('gère un succès sans données (data undefined)', async () => {
+    vi.mocked(apiModule.apiCall).mockResolvedValueOnce({
+      success: true,
+      data: undefined,
+    });
+
+    const { result } = renderHook(() => useAuth());
+
+    let loginResult: { success: boolean; message?: string } | undefined;
+    await act(async () => {
+      loginResult = await result.current.login('admin@test.com', 'password123');
+    });
+
+    expect(loginResult?.success).toBe(false);
+    expect(loginResult?.message).toBe('Identifiants incorrects.');
+    expect(result.current.isAuthenticated).toBe(false);
   });
 });

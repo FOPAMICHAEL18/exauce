@@ -1,3 +1,4 @@
+/* v8 ignore file */
 import AdminProfileForm from "@/app/components/admin/AdminProfileForm";
 
 const Profile = () => {

@@ -2,43 +2,48 @@ import { prisma } from "@/app/lib/prisma";
 import StatCard from "@/app/components/ui/Card/StatCard";
 import AdminReviewTable from "@/app/components/admin/AdminReviewTable";
 
-interface ProductsProps {
+interface ReviewsProps {
     searchParams: Promise<{
         page?: string
     }>
 }
 
-const PRODUCTS_PER_PAGE = 8
+const REVIEWS_PER_PAGE = 8
 
-const Reviews = async ({searchParams} : ProductsProps) => {
+// Parse la page. Si invalide (vide, "abc", négative, 0), on retombe sur 1.
+function parsePage(raw: string | undefined): number {
+    if (!raw) return 1
+    const n = parseInt(raw, 10)
+    if (!Number.isSafeInteger(n) || n < 1) return 1
+    return n
+}
+
+const Reviews = async ({ searchParams }: ReviewsProps) => {
     const resolvedParams = await searchParams
-    const currentPage = Math.max(1, parseInt(resolvedParams.page || '1', 10)) //Convertit le paramètre page de l'URL (qui est du texte) en nombre entier (base 10). Math.max(1, ...) garantit qu'on ne puisse jamais avoir une page inférieure à 1 (si l'utilisateur tape ?page=-5 dans l'URL, ça force à 1).
+    const currentPage = parsePage(resolvedParams.page)
+
     const [totalReviews, pendingReviews, avgRatingResult, reviews] = await Promise.all([
-        //On compte le total des avis
         prisma.review.count(),
-        //On compte les avis en attente 
         prisma.review.count({
-            where: {status: 'hidden'}
+            where: { status: 'hidden' },
         }),
-        //ON donne la moyenne des avis
         prisma.review.aggregate({
-        _avg: {rating: true}
+            _avg: { rating: true },
         }),
-        //On donne les avis
         prisma.review.findMany({
-            orderBy: {createdAt: 'desc'},
+            orderBy: { createdAt: 'desc' },
             include: {
                 product: {
-                    select: {title: true}
-                }
+                    select: { title: true },
+                },
             },
-            skip: (currentPage - 1) * PRODUCTS_PER_PAGE,
-            take: PRODUCTS_PER_PAGE
-        })
+            skip: (currentPage - 1) * REVIEWS_PER_PAGE,
+            take: REVIEWS_PER_PAGE,
+        }),
     ])
 
-    const totalPages = Math.ceil(totalReviews / PRODUCTS_PER_PAGE) //Calcule le nombre total de pages. Math.ceil arrondit à l'entier supérieur (ex: 21 produits / 8 par page = 2.625, ce qui donne 3 pages).
-    const avgRating = avgRatingResult._avg.rating || 0
+    const totalPages = Math.ceil(totalReviews / REVIEWS_PER_PAGE)
+    const avgRating = avgRatingResult._avg.rating ?? 0
 
     return (
         <div className="space-y-6 px-20 py-4">
@@ -47,7 +52,11 @@ const Reviews = async ({searchParams} : ProductsProps) => {
                 <StatCard statName="EN ATTENTE DE MODERATION" statValue={pendingReviews} />
                 <StatCard statName="NOTE MOYENNE" statValue={`${avgRating.toFixed(1)} / 5`} />
             </div>
-            <AdminReviewTable reviews={reviews} totalPages={totalPages} currentPage={currentPage}/>
+            <AdminReviewTable
+                reviews={reviews}
+                totalPages={totalPages}
+                currentPage={currentPage}
+            />
         </div>
     )
 }

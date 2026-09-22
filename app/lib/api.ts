@@ -32,10 +32,14 @@ export const apiCall = async <T = unknown>(
 
     if (!response.ok || data.success === false) {
       if (response.status === 401) {
-        handleUnauthorized()
-        return {
-          success: false,
-          message: 'Votre session a expiré. Veuillez vous reconnecter.',
+        const isLoginEndpoint = endpoint.includes('/api/admin/login')
+
+        if (response.status === 401 && !isLoginEndpoint) {
+          handleUnauthorized()
+          return {
+            success: false,
+            message: 'Votre session a expiré. Veuillez vous reconnecter.',
+          }
         }
       }
 

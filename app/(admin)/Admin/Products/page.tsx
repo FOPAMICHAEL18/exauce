@@ -1,4 +1,5 @@
-import { prisma } from "@/app/lib/prisma"; 
+import { prisma } from "@/app/lib/prisma";
+import { Prisma, StockStatus } from "@prisma/client";
 import AdminProductFilters from "@/app/components/admin/AdminProductFilters";
 import AdminProductTable from "@/app/components/admin/AdminProductTable";
 import StatCard from "@/app/components/ui/Card/StatCard";
@@ -12,47 +13,73 @@ interface ProductsProps {
     }>
 }
 
-export const PRODUCTS_PER_PAGE = 8 //Définit une constante. On affichera au maximum 8 produits par page.
+export const PRODUCTS_PER_PAGE = 8
+
+// Parse la page. Si invalide (vide, "abc", négative), on retombe sur 1.
+function parsePage(raw: string | undefined): number {
+    if (!raw) return 1
+    const n = parseInt(raw, 10)
+    if (!Number.isSafeInteger(n) || n < 1) return 1
+    return n
+}
+
+// Parse l'id de catégorie. Renvoie null si invalide (vide, "abc", "12abc", 0).
+function parseCategoryId(raw: string | undefined): number | null {
+    if (!raw) return null
+    if (!/^\d+$/.test(raw)) return null
+    const n = Number(raw)
+    if (!Number.isSafeInteger(n) || n <= 0) return null
+    return n
+}
+
+// Vérifie que le statut est bien dans l'enum StockStatus.
+function parseStockStatus(raw: string | undefined): StockStatus | null {
+    if (raw === StockStatus.disponible || raw === StockStatus.rupture) {
+        return raw
+    }
+    return null
+}
 
 const Products = async ({ searchParams }: ProductsProps) => {
-    const resolvedParams = await searchParams  //Dans Next.js 15, searchParams est une promesse (Promise) contenant les valeurs de l'URL (ex: ?search=clavier&page=2).
+    const resolvedParams = await searchParams
     const search = resolvedParams.search || ''
     const category = resolvedParams.category || ''
     const status = resolvedParams.status || ''
-    const currentPage = Math.max(1, parseInt(resolvedParams.page || '1', 10)) //Convertit le paramètre page de l'URL (qui est du texte) en nombre entier (base 10). Math.max(1, ...) garantit qu'on ne puisse jamais avoir une page inférieure à 1 (si l'utilisateur tape ?page=-5 dans l'URL, ça force à 1).
+    const currentPage = parsePage(resolvedParams.page)
 
-    const where: any = {}
+    const where: Prisma.ProductWhereInput = {}
 
     if (search) {
-        where.title = { contains: search, mode: 'insensitive' } //Recherche le texte saisi dans le titre sans tenir compte des majuscules/minuscules.
+        where.title = { contains: search, mode: 'insensitive' }
     }
 
-    if (category) {
-        where.categoryId = parseInt(category, 10)
+    const categoryId = parseCategoryId(category)
+    if (categoryId !== null) {
+        where.categoryId = categoryId
     }
 
-    if (status) {
-        where.stockStatus = status
+    const stockStatus = parseStockStatus(status)
+    if (stockStatus !== null) {
+        where.stockStatus = stockStatus
     }
 
-    // Récupération simultanée avec calcul du Skip pour Prisma
-    const [productsFromDb, categories, filteredCount, publishedCount, totalCount] = await Promise.all([   //C'est une optimisation clé. Au lieu de faire les requêtes à la base de données les unes après les autres (ce qui prendrait beaucoup de temps), Promise.all exécute les 5 requêtes en parallèle sur la base de données.
+    const [productsFromDb, categories, filteredCount, publishedCount, totalCount] = await Promise.all([
         prisma.product.findMany({
             where,
             include: { category: true },
             orderBy: { createdAt: 'desc' },
-            skip: (currentPage - 1) * PRODUCTS_PER_PAGE, //C'est le moteur de la pagination. Si nous sommes à la page 1 : (1 - 1) * 8 = 0 (on ne saute aucun produit). Si nous sommes à la page 2 : (2 - 1) * 8 = 8 (on saute les 8 premiers produits pour prendre les 8 suivants).
-            take: PRODUCTS_PER_PAGE //Demande à Prisma de ne récupérer que 8 produits.
+            skip: (currentPage - 1) * PRODUCTS_PER_PAGE,
+            take: PRODUCTS_PER_PAGE
         }),
         prisma.category.findMany({
             orderBy: { name: 'asc' }
         }),
-        prisma.product.count({ where }), // Total d'éléments filtrés
+        prisma.product.count({ where }),
         prisma.product.count({ where: { stockStatus: 'disponible' } }),
         prisma.product.count()
     ])
 
-    const totalPages = Math.ceil(filteredCount / PRODUCTS_PER_PAGE) //Calcule le nombre total de pages. Math.ceil arrondit à l'entier supérieur (ex: 21 produits / 8 par page = 2.625, ce qui donne 3 pages).
+    const totalPages = Math.ceil(filteredCount / PRODUCTS_PER_PAGE)
 
     const formattedProducts = productsFromDb.map((product) => ({
         ...product,
@@ -61,7 +88,7 @@ const Products = async ({ searchParams }: ProductsProps) => {
 
     return (
         <div className="space-y-6 px-20 py-4">
-            <AdminProductFilters 
+            <AdminProductFilters
                 search={search}
                 category={category}
                 status={status}
@@ -73,7 +100,7 @@ const Products = async ({ searchParams }: ProductsProps) => {
                 <StatCard statName='PUBLIES' statValue={publishedCount}/>
             </div>
 
-            <AdminProductTable 
+            <AdminProductTable
                 currentSearch={search}
                 currentCategory={category}
                 currentStatus={status}

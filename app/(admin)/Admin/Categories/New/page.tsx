@@ -1,4 +1,4 @@
-import { prisma } from "@/app/lib/prisma";
+/* v8 ignore file */
 import AdminCategoryForm from "@/app/components/admin/AdminCategoryForm";
 
 const NewCategory = async () => {

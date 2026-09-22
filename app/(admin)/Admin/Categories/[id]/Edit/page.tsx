@@ -4,6 +4,14 @@ import { prisma } from "@/app/lib/prisma";
 import { notFound } from 'next/navigation';
 import AdminCategoryForm from "@/app/components/admin/AdminCategoryForm";
 
+// Parse un id de route. Refuse "12abc", "-5", "1.5", "".
+function parseRouteId(raw: string): number | null {
+  if (!/^\d+$/.test(raw)) return null
+  const n = Number(raw)
+  if (!Number.isSafeInteger(n) || n <= 0) return null
+  return n
+}
+
 // Dans Next.js 15+, 'params' est une Promise qu'il faut 'await'
 const EditCategoryPage = async ({ params }: { params: Promise<{ id: string }> }) => {
     // On attend la résolution des paramètres d'URL
@@ -11,10 +19,13 @@ const EditCategoryPage = async ({ params }: { params: Promise<{ id: string }> })
 
     // params.id est une chaîne de caractères (ex: "1").
     // On utilise parseInt() avec la base 10 pour la convertir en nombre entier.
-    const categoryId = parseInt(id, 10);
+    const categoryId = parseRouteId(id);
 
-    if (isNaN(categoryId)) {
-        notFound();
+    if (categoryId === null) {
+       notFound()
+        // notFound() lance une exception Next.js, on n'arrive jamais ici.
+        // Ce throw est là pour que TypeScript sache que la branche s'arrête.
+        throw new Error('unreachable')
     }
 
     const category = await prisma.category.findUnique({
@@ -22,7 +33,8 @@ const EditCategoryPage = async ({ params }: { params: Promise<{ id: string }> })
     });
 
     if (!category) {
-        notFound();
+        notFound()
+        throw new Error('unreachable')
     }
 
 

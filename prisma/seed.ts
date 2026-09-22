@@ -49,7 +49,7 @@ const main = async (): Promise<void> => {
         data: {
             name: 'admin',
             surname: 'perdu',
-            email: 'adminperdu@getMaxListeners.com',
+            email: 'admin@gmail.com',
             passwordHash: await bcrypt.hash('motDePasse123', 10) //On le remplacera plus tard
         }
     })

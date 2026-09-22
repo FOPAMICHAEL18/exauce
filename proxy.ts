@@ -70,9 +70,7 @@ const proxy = (request: NextRequest): NextResponse => {
       request: { headers: requestHeaders },
     })
   } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('Erreur middleware:', error instanceof Error ? error.message : error)
-    }
+    console.warn('Erreur middleware:', error instanceof Error ? error.message : error)
 
     return NextResponse.json(
       { success: false, message: 'Token invalide ou expiré' },

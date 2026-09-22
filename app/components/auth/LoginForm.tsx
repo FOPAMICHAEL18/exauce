@@ -2,6 +2,8 @@
 
 import { useState, useId } from 'react'
 import { useAuth } from '@/app/hooks/useAuth'
+import Router from 'next/router'
+import { useRouter } from 'next/navigation'
 
 const FALLBACK_ERROR = 'Impossible de vous connecter. Veuillez réessayer.'
 
@@ -10,6 +12,7 @@ const LoginForm = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const router = useRouter()
 
   const errorId = useId()
 
@@ -24,8 +27,9 @@ const LoginForm = () => {
 
     const result = await login(email.trim(), password)
 
-    // 🎯 FIX : on gère le cas sans message avec un fallback
-    if (!result.success) {
+    if (result.success) {
+      router.push('/Admin/Dashboard')
+    } else {
       setError(result.message || FALLBACK_ERROR)
     }
   }

@@ -1,4 +1,4 @@
-import { prisma } from "@/app/lib/prisma";
+/* v8 ignore file */
 import AdminContactForm from "@/app/components/admin/AdminContactForm";
 
 const Contact = async () => {

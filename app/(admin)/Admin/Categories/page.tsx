@@ -9,11 +9,19 @@ interface CategoriesProps {
     }>
 }
 
+function parsePage(raw: string | undefined): number {
+    if (!raw) return 1
+    const n = parseInt(raw, 10)
+    if (!Number.isSafeInteger(n) || n < 1) return 1
+    return n
+}
+
 const PRODUCTS_PER_PAGE = 8 //Définit une constante. On affichera au maximum 8 produits par page.
 
 const Categories = async ({searchParams}: CategoriesProps) => {
     const resolvedParams = await searchParams  //Dans Next.js 15, searchParams est une promesse (Promise) contenant les valeurs de l'URL (ex: ?search=clavier&page=2).
-    const currentPage = Math.max(1, parseInt(resolvedParams.page || '1', 10)) //Convertit le paramètre page de l'URL (qui est du texte) en nombre entier (base 10). Math.max(1, ...) garantit qu'on ne puisse jamais avoir une page inférieure à 1 (si l'utilisateur tape ?page=-5 dans l'URL, ça force à 1).
+    //Convertit le paramètre page de l'URL (qui est du texte) en nombre entier (base 10). Math.max(1, ...) garantit qu'on ne puisse jamais avoir une page inférieure à 1 (si l'utilisateur tape ?page=-5 dans l'URL, ça force à 1).
+    const currentPage = parsePage(resolvedParams.page)
 
     // Récupération simultanée avec calcul du Skip pour Prisma
     const [categoriesFromDb, totalCount] = await Promise.all([   //C'est une optimisation clé. Au lieu de faire les requêtes à la base de données les unes après les autres (ce qui prendrait beaucoup de temps), Promise.all exécute les 3 requêtes en parallèle sur la base de données.

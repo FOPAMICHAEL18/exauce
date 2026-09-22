@@ -1,4 +1,3 @@
-'use client'
 import Link from 'next/link'
 import { Ship, ShieldCheck, Truck, Sparkles, Store, Building2 } from 'lucide-react'
 import Breadcrumb from '@/app/components/ui/Breadcrumb'

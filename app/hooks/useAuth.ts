@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { apiCall } from '../lib/api';
 
 // Structure de l'utilisateur stocké dans le state / token
-export interface AuthUser {
+export interface AuthAdmin {
   id: number;
   email: string;
   name: string;
@@ -11,11 +11,11 @@ export interface AuthUser {
 
 export interface LoginResponse {
   token: string;
-  user: AuthUser;
+  admin: AuthAdmin;
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [admin, setAdmin] = useState<AuthAdmin | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
@@ -26,15 +26,17 @@ export function useAuth() {
     if (token) {
       try {
         // Extraction et décodage du payload JWT (base64)
-        const payloadBase64 = token.split('.')[1];
-        const decodedPayload = JSON.parse(atob(payloadBase64)) as AuthUser;
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+        const decodedPayload = JSON.parse(atob(padded)) as AuthAdmin;
         
-        setUser(decodedPayload);
+        setAdmin(decodedPayload);
         setIsAuthenticated(true);
       } catch (error) {
         // En cas de token corrompu
         localStorage.removeItem('adminToken');
-        setUser(null);
+        setAdmin(null);
         setIsAuthenticated(false);
       }
     }
@@ -51,17 +53,15 @@ export function useAuth() {
       });
 
       if (response.success && response.data) {
-        const { token, user: userData } = response.data;
+        const { token, admin: adminData } = response.data;
 
         // Stockage du jeton
         localStorage.setItem('adminToken', token);
         
         // Mise à jour de l'état
-        setUser(userData);
+        setAdmin(adminData);
         setIsAuthenticated(true);
 
-        // Redirection
-        router.push('/Admin/Dashboard');
         return { success: true };
       }
 
@@ -80,13 +80,13 @@ export function useAuth() {
   // 3. Méthode de déconnexion
   const logout = () => {
     localStorage.removeItem('adminToken');
-    setUser(null);
+    setAdmin(null);
     setIsAuthenticated(false);
     router.push('/Admin/Login');
   };
 
   return {
-    user,
+    admin,
     isAuthenticated,
     loading,
     login,

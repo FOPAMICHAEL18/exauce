@@ -1,48 +1,40 @@
 import { prisma } from "@/app/lib/prisma";
-// On importe la fonction 'notFound' de Next.js pour déclencher la page 404
-// si le produit demandé n'existe pas.
 import { notFound } from 'next/navigation';
 import AdminProductForm from "@/app/components/admin/AdminProductForm";
 
-// Dans Next.js 15+, 'params' est une Promise qu'il faut 'await'
+// Parse un id de route. Refuse "12abc", "-5", "1.5", "".
+function parseRouteId(raw: string): number | null {
+  if (!/^\d+$/.test(raw)) return null
+  const n = Number(raw)
+  if (!Number.isSafeInteger(n) || n <= 0) return null
+  return n
+}
+
 const EditProductPage = async ({ params }: { params: Promise<{ id: string }> }) => {
-    // On attend la résolution des paramètres d'URL
     const { id } = await params;
+    const productId = parseRouteId(id);
 
-    // params.id est une chaîne de caractères (ex: "1").
-    // On utilise parseInt() avec la base 10 pour la convertir en nombre entier.
-    const productId = parseInt(id, 10);
-
-    if (isNaN(productId)) {
+    if (productId === null) {
         notFound();
+        throw new Error('unreachable');
     }
 
     const product = await prisma.product.findUnique({
         where: { id: productId },
-        include: {
-            category: true, // On inclut la catégorie
-        },
+        select: { id: true },
     });
 
     if (!product) {
         notFound();
+        throw new Error('unreachable');
     }
 
-    // On va chercher toutes les catégories, triées par ordre alphabétique,
-    // pour les afficher dans le menu déroulant du formulaire.
     const categories = await prisma.category.findMany({
         orderBy: { name: 'asc' },
     });
 
-    // Formatage des données si le prix Prisma est de type Decimal
-    const formattedProduct = {
-        ...product,
-        price: Number(product.price),
-    };
-
     return (
         <div className="space-y-6 px-20 py-4">
-            {/* Formulaire d'édition */}
             <AdminProductForm categories={categories} productId={productId}/>
         </div>
     );
