@@ -15,8 +15,10 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run lint
+      - run: npm run type-check
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml   # optionnel, pour exclure des fichiers
       - run: npm run test:coverage
       - run: npm audit --audit-level=moderate
