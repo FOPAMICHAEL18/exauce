@@ -20,5 +20,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: .gitleaks.toml   # optionnel, pour exclure des fichiers
+        with:
+          args: --log-opts="--all"
       - run: npm run test:coverage
       - run: npm audit --audit-level=moderate
