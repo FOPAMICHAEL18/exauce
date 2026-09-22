@@ -1,1 +1,1 @@
-npx lint-staged && npm audit --audit-level=moderate
+npx lint-staged && npm audit --audit-level=high

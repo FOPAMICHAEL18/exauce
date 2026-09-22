@@ -1,9 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prismaMock } from '@/app/test/mocks/prisma'
 import { POST } from './route'
-import { afterEach } from 'node:test'
 
 // On mocke Prisma pour ne pas toucher à la base.
 vi.mock('@/app/lib/prisma', async () => {

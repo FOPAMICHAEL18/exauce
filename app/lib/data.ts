@@ -3,7 +3,7 @@ import { prisma } from '@/app/lib/prisma'
 import { Contact } from '@prisma/client'
 
 // Type exact basé sur le `select` de Prisma
-export type CategoryItem = {
+type CategoryItem = {
     id: number // ou string selon ton schéma
     name: string
     slug: string

@@ -37,6 +37,7 @@ export default defineConfig({
         'app/lib/prisma.ts',
         '**/A-propos/**',
         '**/Comment-ca-marche/**',
+        '**/data.ts',
         'app/layout.tsx',
         '**/layout.tsx',
         '**/Footer.tsx',
