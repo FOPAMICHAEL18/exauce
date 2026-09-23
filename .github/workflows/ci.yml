@@ -23,7 +23,7 @@ jobs:
         with:
           args: --log-opts="--all"
       - run: npm run test:coverage
-      - run: npm audit --audit-level=moderate
+      - run: npm audit --audit-level=high
 
   deploy:
     needs: [validate-push]
