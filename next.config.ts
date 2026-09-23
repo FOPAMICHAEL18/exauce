@@ -5,9 +5,11 @@ const nextConfig: NextConfig = {
         optimizePackageImports: ['lucide-react'],
     },
     images: {
+        unoptimized: true,
         remotePatterns: [
         { protocol: 'https', hostname: 'images.unsplash.com' },
         { protocol: 'https', hostname: 'res.cloudinary.com' },
+        { protocol: 'https', hostname: 'picsum.photos' },
         // ... tous les domaines que tu utilises pour les images produits
         ],
     },
