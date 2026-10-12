@@ -1,1 +1,1 @@
-npx lint-staged && npm audit --audit-level=high
+npx lint-staged && npx audit-ci --config ./audit-ci.jsonc
