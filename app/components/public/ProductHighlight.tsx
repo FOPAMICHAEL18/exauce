@@ -44,7 +44,7 @@ const ProductHighlight = ({ products }: ProductHighlightProps) => {
               return (
                 <Link
                   key={product.id}
-                  href={`/Products/${product.slug}`}
+                  href={`/Catalogue/${product.slug}`}
                   className="group bg-white rounded-sm border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:-translate-y-2 hover:shadow-lg transition-all duration-300 hover:z-10 will-change-transform"
                 >
                   <div className="relative w-full h-50 shrink-0 bg-[#EAEFF2] flex items-center justify-center overflow-hidden">
