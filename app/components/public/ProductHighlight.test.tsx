@@ -47,11 +47,11 @@ describe('ProductHighlight', () => {
     render(<ProductHighlight products={mockProducts} />)
     expect(screen.getByRole('link', { name: /chaise bois/i })).toHaveAttribute(
       'href',
-      '/Products/chaise-bois'
+      '/Catalogue/chaise-bois'
     )
     expect(screen.getByRole('link', { name: /table chêne/i })).toHaveAttribute(
       'href',
-      '/Products/table-chene'
+      '/Catalogue/table-chene'
     )
   })
 
