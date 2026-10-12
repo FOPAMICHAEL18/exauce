@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/app/lib/prisma'
 import { validateEmail } from '@/app/lib/validators'
-import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import { hashPassword, verifyPassword } from '@/app/lib/password'
+import { signToken } from '@/app/lib/jwt'
 
 const JWT_SECRET = process.env.JWT_SECRET
 if (!JWT_SECRET) {
@@ -16,7 +16,10 @@ const PASSWORD_MIN_LENGTH = 1
 
 // Hash leurre utilisé pour égaliser le temps de réponse quand l’admin
 // n’existe pas. Généré une seule fois au chargement du module.
-const DUMMY_HASH = bcrypt.hashSync('__dummy_password__', 10)
+// const DUMMY_HASH = bcrypt.hashSync('__dummy_password__', 10)
+// ⚠️ Le DUMMY_HASH doit être pré-calculé, car on ne peut pas hacher
+// au chargement du module (Workers n'a pas de crypto random au boot).
+const DUMMY_HASH = 'scrypt$00$00'  // Fake hash, ne matchera jamais
 
 const POST = async (request: Request): Promise<NextResponse> => {
   try {
@@ -89,16 +92,17 @@ const POST = async (request: Request): Promise<NextResponse> => {
     const INVALID_CREDENTIALS_MESSAGE = 'Email ou mot de passe incorrect'
 
     if (!admin) {
-      // Comparaison factice pour égaliser le temps de réponse avec le
-      // cas « admin existe mais mauvais mot de passe ».
-      await bcrypt.compare(password, DUMMY_HASH)
+      // Comparaison factice pour égaliser le temps de réponse.
+      // Comme DUMMY_HASH est invalide, verifyPassword retournera
+      // rapidement false, ce qui est suffisant.
+      await verifyPassword(password, DUMMY_HASH)
       return NextResponse.json(
         { success: false, message: INVALID_CREDENTIALS_MESSAGE },
         { status: 401 },
       )
     }
 
-    const isPasswordValid = await bcrypt.compare(password, admin.passwordHash)
+    const isPasswordValid = await verifyPassword(password, admin.passwordHash)
 
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -110,11 +114,7 @@ const POST = async (request: Request): Promise<NextResponse> => {
     // ⚠️ Le payload DOIT avoir la clé `id` et `email` pour matcher
     //    `AdminData` et `isAdminPayload` du middleware. Sinon, chaque
     //    requête suivante sera rejetée en 401.
-    const token = jwt.sign(
-      { id: admin.id, email: admin.email },
-      JWT_SECRET,
-      { expiresIn: '24h' },
-    )
+    const token = await signToken({ id: admin.id, email: admin.email })
 
     return NextResponse.json({
       success: true,

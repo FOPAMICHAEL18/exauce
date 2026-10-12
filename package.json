@@ -5,12 +5,12 @@
   "packageManager": "npm@11.17.0",
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "@noble/hashes": "^2.4.0",
     "@prisma/adapter-neon": "^7.9.1",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@vinext/cloudflare": "latest",
-    "bcryptjs": "^3.0.3",
-    "jsonwebtoken": "^9.0.3",
+    "jose": "^6.2.12",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.34.0",
     "pg": "^8.23.0",
@@ -32,9 +32,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
-    "@types/bcryptjs": "^2.4.6",
     "@types/eslint__js": "^8.42.3",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^26.2.0",
     "@types/pg": "^8.23.1",
@@ -44,6 +42,7 @@
     "@vitejs/plugin-react": "latest",
     "@vitejs/plugin-rsc": "latest",
     "@vitest/coverage-v8": "^5.0.1",
+    "audit-ci": "^7.1.0",
     "dotenv": "^17.4.2",
     "eslint": "^10.10.0",
     "husky": "^9.1.7",
@@ -94,6 +93,19 @@
   "overrides": {
     "deepmerge-ts": "^8.0.0",
     "mysql2": "^3.23.1",
-    "sharp": "^0.35.4"
+    "sharp": "^0.35.4",
+    "braces": "^3.0.3",
+    "fflate": "^0.8.2",
+    "undici": "^7.30.0"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.10.0": true,
+    "esbuild@0.28.1": true,
+    "workerd@1.20261001.1": true,
+    "workerd@1.20260820.1": true,
+    "msw@2.15.0": true,
+    "prisma@7.10.0": true,
+    "esbuild@0.28.2": true,
+    "workerd@1.20261006.1": true
   }
 }

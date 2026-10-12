@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { prismaMock } from '@/app/test/mocks/prisma'
+import { verifyPassword, hashPassword } from '@/app/lib/password'
 import { GET, PUT } from './route'
 
 vi.mock('@/app/lib/prisma', async () => {
@@ -8,18 +9,12 @@ vi.mock('@/app/lib/prisma', async () => {
   return { prisma: prismaMock }
 })
 
-vi.mock('bcryptjs', () => ({
-  default: {
-    compare: vi.fn(),
-    hash: vi.fn(),
-  },
+vi.mock('@/app/lib/password', () => ({
+  verifyPassword: vi.fn(),
+  hashPassword: vi.fn(),
 }))
 
-// Import après le mock pour récupérer la version mockée.
-import bcrypt from 'bcryptjs'
-
 const ADMIN_ID = 42
-// Le JWT signé par le login a maintenant la clé `id` (pas `adminId`).
 const ADMIN_HEADER = JSON.stringify({ id: ADMIN_ID, email: 'admin@test.com' })
 
 const VALID_NAME = 'Jean'
@@ -72,7 +67,10 @@ async function callGET(options: {
   adminHeader?: string | null
 } = {}): Promise<{ status: number; json: ApiResponse }> {
   const response = await GET(createRequest({ ...options, method: 'GET' }))
-  return { status: response.status, json: (await response.json()) as ApiResponse }
+  return {
+    status: response.status,
+    json: (await response.json()) as ApiResponse,
+  }
 }
 
 async function callPUT(options: {
@@ -81,10 +79,12 @@ async function callPUT(options: {
   rawBody?: string
 } = {}): Promise<{ status: number; json: ApiResponse }> {
   const response = await PUT(createRequest({ ...options, method: 'PUT' }))
-  return { status: response.status, json: (await response.json()) as ApiResponse }
+  return {
+    status: response.status,
+    json: (await response.json()) as ApiResponse,
+  }
 }
 
-// Représente l'admin tel que Prisma le renverrait sans `select`.
 function makeAdmin(overrides: Partial<{
   id: number
   name: string
@@ -97,12 +97,11 @@ function makeAdmin(overrides: Partial<{
     name: VALID_NAME,
     surname: VALID_SURNAME,
     email: VALID_EMAIL,
-    passwordHash: '$2a$10$hash',
+    passwordHash: 'scrypt$fake$fake',
     ...overrides,
   }
 }
 
-// Version restreinte au `select` de la route.
 function makeSelectedAdmin(overrides: Partial<AdminData> = {}): AdminData {
   return {
     id: ADMIN_ID,
@@ -135,7 +134,6 @@ describe('GET /api/admin/profile', () => {
   })
 
   it('utilise `id` du JWT (pas `adminId`)', async () => {
-    // Test critique : le payload JWT contient `id`, pas `adminId`.
     prismaMock.admin.findUnique.mockResolvedValueOnce(
       makeSelectedAdmin() as never,
     )
@@ -195,8 +193,8 @@ describe('GET /api/admin/profile', () => {
 describe('PUT /api/admin/profile', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    vi.mocked(bcrypt.compare).mockReset()
-    vi.mocked(bcrypt.hash).mockReset()
+    vi.mocked(verifyPassword).mockReset()
+    vi.mocked(hashPassword).mockReset()
   })
 
   it('met à jour name uniquement', async () => {
@@ -218,9 +216,8 @@ describe('PUT /api/admin/profile', () => {
       data: { name: 'Nouveau' },
       select: { id: true, name: true, surname: true, email: true },
     })
-    // bcrypt ne doit pas être touché pour un simple changement de nom.
-    expect(bcrypt.compare).not.toHaveBeenCalled()
-    expect(bcrypt.hash).not.toHaveBeenCalled()
+    expect(verifyPassword).not.toHaveBeenCalled()
+    expect(hashPassword).not.toHaveBeenCalled()
   })
 
   it('met à jour name + surname + email', async () => {
@@ -251,8 +248,8 @@ describe('PUT /api/admin/profile', () => {
 
   it('change le mot de passe quand currentPassword est correct', async () => {
     prismaMock.admin.findUnique.mockResolvedValueOnce(makeAdmin() as never)
-    vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
-    vi.mocked(bcrypt.hash).mockResolvedValueOnce('$2a$10$newhash' as never)
+    vi.mocked(verifyPassword).mockResolvedValueOnce(true)
+    vi.mocked(hashPassword).mockResolvedValueOnce('scrypt$newhash')
     prismaMock.admin.update.mockResolvedValueOnce(makeSelectedAdmin() as never)
 
     const { status } = await callPUT({
@@ -263,22 +260,19 @@ describe('PUT /api/admin/profile', () => {
     })
 
     expect(status).toBe(200)
-    expect(bcrypt.compare).toHaveBeenCalledWith(
-      'ancien-mdp',
-      '$2a$10$hash',
-    )
-    expect(bcrypt.hash).toHaveBeenCalledWith('nouveau-mdp-long', 10)
+    expect(verifyPassword).toHaveBeenCalledWith('ancien-mdp', 'scrypt$fake$fake')
+    expect(hashPassword).toHaveBeenCalledWith('nouveau-mdp-long')
     expect(prismaMock.admin.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { passwordHash: '$2a$10$newhash' },
+        data: { passwordHash: 'scrypt$newhash' },
       }),
     )
   })
 
   it('trim name et surname mais PAS les mots de passe', async () => {
     prismaMock.admin.findUnique.mockResolvedValueOnce(makeAdmin() as never)
-    vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
-    vi.mocked(bcrypt.hash).mockResolvedValueOnce('$2a$10$newhash' as never)
+    vi.mocked(verifyPassword).mockResolvedValueOnce(true)
+    vi.mocked(hashPassword).mockResolvedValueOnce('scrypt$newhash')
     prismaMock.admin.update.mockResolvedValueOnce(makeSelectedAdmin() as never)
 
     await callPUT({
@@ -289,8 +283,8 @@ describe('PUT /api/admin/profile', () => {
       },
     })
 
-    expect(bcrypt.compare).toHaveBeenCalledWith('  ancien  ', '$2a$10$hash')
-    expect(bcrypt.hash).toHaveBeenCalledWith('  nouveau  ', 10)
+    expect(verifyPassword).toHaveBeenCalledWith('  ancien  ', 'scrypt$fake$fake')
+    expect(hashPassword).toHaveBeenCalledWith('  nouveau  ')
     expect(prismaMock.admin.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ name: 'Marie' }),
@@ -299,7 +293,6 @@ describe('PUT /api/admin/profile', () => {
   })
 
   it('ignore les champs identiques à la valeur existante', async () => {
-    // Si on envoie name = name existant, on ne veut pas d’update inutile.
     prismaMock.admin.findUnique.mockResolvedValueOnce(makeAdmin() as never)
 
     const { status, json } = await callPUT({ body: { name: VALID_NAME } })
@@ -413,7 +406,7 @@ describe('PUT /api/admin/profile', () => {
 
   it('renvoie 400 si currentPassword est incorrect', async () => {
     prismaMock.admin.findUnique.mockResolvedValueOnce(makeAdmin() as never)
-    vi.mocked(bcrypt.compare).mockResolvedValueOnce(false as never)
+    vi.mocked(verifyPassword).mockResolvedValueOnce(false)
 
     const { status, json } = await callPUT({
       body: { currentPassword: 'mauvais', newPassword: 'nouveau-mdp-long' },
@@ -429,7 +422,7 @@ describe('PUT /api/admin/profile', () => {
 
   it('renvoie 400 si le nouveau mot de passe est identique à l’actuel', async () => {
     prismaMock.admin.findUnique.mockResolvedValueOnce(makeAdmin() as never)
-    vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
+    vi.mocked(verifyPassword).mockResolvedValueOnce(true)
 
     const { status, json } = await callPUT({
       body: {
@@ -443,7 +436,7 @@ describe('PUT /api/admin/profile', () => {
       success: false,
       message: 'Le nouveau mot de passe doit être différent de l’actuel',
     })
-    expect(bcrypt.hash).not.toHaveBeenCalled()
+    expect(hashPassword).not.toHaveBeenCalled()
   })
 
   it('renvoie 404 si l’admin n’existe plus', async () => {

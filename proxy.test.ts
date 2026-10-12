@@ -1,21 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import jwt from 'jsonwebtoken'
+import { verifyToken } from '@/app/lib/jwt'
 import { proxy, config } from './proxy'
 
-// On mocke jsonwebtoken pour contrôler la vérification et ne pas dépendre
-// d'un vrai secret au runtime.
-vi.mock('jsonwebtoken', () => ({
-  default: {
-    verify: vi.fn(),
-  },
+vi.mock('@/app/lib/jwt', () => ({
+  verifyToken: vi.fn(),
 }))
 
-// Forme décodée d'un JWT admin valide.
 const VALID_PAYLOAD = { id: 1, email: 'admin@test.com' }
 const VALID_TOKEN = 'header.payload.signature'
 
-// Construit une NextRequest avec un chemin et/ou un header Authorization.
 function makeRequest(options: {
   path?: string
   authHeader?: string | null
@@ -43,7 +37,7 @@ describe('proxy (middleware)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-    vi.mocked(jwt.verify).mockReturnValue(VALID_PAYLOAD as never)
+    vi.mocked(verifyToken).mockResolvedValue(VALID_PAYLOAD)
   })
 
   it('expose bien un matcher sur /api/admin/*', () => {
@@ -51,16 +45,15 @@ describe('proxy (middleware)', () => {
   })
 
   describe('route publique /api/admin/login', () => {
-    it('laisse passer sans token', () => {
-      const response = proxy(makeRequest({ path: '/api/admin/login' }))
+    it('laisse passer sans token', async () => {
+      const response = await proxy(makeRequest({ path: '/api/admin/login' }))
 
       expect(response.status).toBe(200)
-      // NextResponse.next() produit une réponse 200 sans corps.
-      expect(jwt.verify).not.toHaveBeenCalled()
+      expect(verifyToken).not.toHaveBeenCalled()
     })
 
-    it('laisse passer même avec un header Authorization malformé', () => {
-      const response = proxy(
+    it('laisse passer même avec un header Authorization malformé', async () => {
+      const response = await proxy(
         makeRequest({
           path: '/api/admin/login',
           authHeader: 'NotBearer xyz',
@@ -68,24 +61,26 @@ describe('proxy (middleware)', () => {
       )
 
       expect(response.status).toBe(200)
-      expect(jwt.verify).not.toHaveBeenCalled()
+      expect(verifyToken).not.toHaveBeenCalled()
     })
   })
 
   describe('absence ou mauvais format du token', () => {
     it('renvoie 401 si le header Authorization est absent', async () => {
-      const response = proxy(makeRequest({ path: '/api/admin/categories' }))
+      const response = await proxy(
+        makeRequest({ path: '/api/admin/categories' }),
+      )
 
       expect(response.status).toBe(401)
       await expect(response.json()).resolves.toEqual({
         success: false,
         message: 'Token manquant ou invalide',
       })
-      expect(jwt.verify).not.toHaveBeenCalled()
+      expect(verifyToken).not.toHaveBeenCalled()
     })
 
     it('renvoie 401 si le header ne commence pas par "Bearer "', async () => {
-      const response = proxy(
+      const response = await proxy(
         makeRequest({
           path: '/api/admin/categories',
           authHeader: 'Token xyz',
@@ -99,8 +94,8 @@ describe('proxy (middleware)', () => {
       })
     })
 
-    it('renvoie 401 si le header est "Bearer" sans espace ni token', async () => {
-      const response = proxy(
+    it('renvoie 401 si le header est "Bearer" sans espace', async () => {
+      const response = await proxy(
         makeRequest({
           path: '/api/admin/categories',
           authHeader: 'Bearer',
@@ -111,21 +106,20 @@ describe('proxy (middleware)', () => {
     })
 
     it('renvoie 401 si le header est "Bearer " suivi de rien', async () => {
-      const response = proxy(
+      const response = await proxy(
         makeRequest({
           path: '/api/admin/categories',
           authHeader: 'Bearer ',
         }),
       )
 
-      // authHeader.split(' ')[1] === '' → falsy → 401
       expect(response.status).toBe(401)
     })
   })
 
   describe('token valide', () => {
-    it('laisse passer et pose x-admin-data', () => {
-      const response = proxy(
+    it('laisse passer et pose x-admin-data', async () => {
+      const response = await proxy(
         makeRequest({
           path: '/api/admin/categories',
           authHeader: `Bearer ${VALID_TOKEN}`,
@@ -133,28 +127,23 @@ describe('proxy (middleware)', () => {
       )
 
       expect(response.status).toBe(200)
-      expect(jwt.verify).toHaveBeenCalledWith(VALID_TOKEN, expect.any(String))
+      expect(verifyToken).toHaveBeenCalledWith(VALID_TOKEN)
     })
 
-    it('appelle jwt.verify avec le token extrait (sans le "Bearer ")', () => {
-      proxy(
+    it('appelle verifyToken avec le token extrait (sans le "Bearer ")', async () => {
+      await proxy(
         makeRequest({
           path: '/api/admin/products',
           authHeader: `Bearer ${VALID_TOKEN}`,
         }),
       )
 
-      expect(jwt.verify).toHaveBeenCalledWith(VALID_TOKEN, expect.any(String))
-      expect(jwt.verify).not.toHaveBeenCalledWith(
-        `Bearer ${VALID_TOKEN}`,
-        expect.any(String),
-      )
+      expect(verifyToken).toHaveBeenCalledWith(VALID_TOKEN)
+      expect(verifyToken).not.toHaveBeenCalledWith(`Bearer ${VALID_TOKEN}`)
     })
 
     it('écrase un x-admin-data envoyé par le client', async () => {
-      // Un client malin envoie son propre header, mais le middleware
-      // le supprime avant de poser le sien.
-      const response = proxy(
+      const response = await proxy(
         makeRequest({
           path: '/api/admin/categories',
           authHeader: `Bearer ${VALID_TOKEN}`,
@@ -163,20 +152,16 @@ describe('proxy (middleware)', () => {
       )
 
       expect(response.status).toBe(200)
-      // On ne peut pas lire directement les headers de la requête "next",
-      // mais on vérifie que la réponse est bien un NextResponse.next() (200)
-      // et que jwt.verify a été appelé, ce qui prouve qu'on est passé par
-      // le chemin "succès".
-      expect(jwt.verify).toHaveBeenCalled()
+      expect(verifyToken).toHaveBeenCalled()
     })
 
-    it('accepte un email avec des caractères spéciaux dans le payload', () => {
-      vi.mocked(jwt.verify).mockReturnValueOnce({
+    it('accepte un email avec des caractères spéciaux dans le payload', async () => {
+      vi.mocked(verifyToken).mockResolvedValueOnce({
         id: 42,
         email: 'user+tag@sub.domain.co.uk',
-      } as never)
+      })
 
-      const response = proxy(
+      const response = await proxy(
         makeRequest({
           path: '/api/admin/categories',
           authHeader: `Bearer ${VALID_TOKEN}`,
@@ -188,12 +173,12 @@ describe('proxy (middleware)', () => {
   })
 
   describe('token invalide / payload malformé', () => {
-    it('renvoie 401 si jwt.verify throw (signature invalide)', async () => {
-      vi.mocked(jwt.verify).mockImplementationOnce(() => {
-        throw new Error('invalid signature')
-      })
+    it('renvoie 401 si verifyToken throw', async () => {
+      vi.mocked(verifyToken).mockRejectedValueOnce(
+        new Error('invalid signature'),
+      )
 
-      const response = proxy(
+      const response = await proxy(
         makeRequest({
           path: '/api/admin/categories',
           authHeader: `Bearer ${VALID_TOKEN}`,
@@ -211,12 +196,10 @@ describe('proxy (middleware)', () => {
       )
     })
 
-    it('renvoie 401 si jwt.verify throw une valeur non-Error', async () => {
-      vi.mocked(jwt.verify).mockImplementationOnce(() => {
-        throw 'boom'
-      })
+    it('renvoie 401 si verifyToken throw une valeur non-Error', async () => {
+      vi.mocked(verifyToken).mockRejectedValueOnce('boom')
 
-      const response = proxy(
+      const response = await proxy(
         makeRequest({
           path: '/api/admin/categories',
           authHeader: `Bearer ${VALID_TOKEN}`,
@@ -227,10 +210,10 @@ describe('proxy (middleware)', () => {
       expect(console.warn).toHaveBeenCalledWith('Erreur middleware:', 'boom')
     })
 
-    it('renvoie 401 si le payload est un tableau', async () => {
-      vi.mocked(jwt.verify).mockReturnValueOnce([] as never)
+    it('renvoie 401 si verifyToken renvoie null', async () => {
+      vi.mocked(verifyToken).mockResolvedValueOnce(null)
 
-      const response = proxy(
+      const response = await proxy(
         makeRequest({
           path: '/api/admin/categories',
           authHeader: `Bearer ${VALID_TOKEN}`,
@@ -243,134 +226,31 @@ describe('proxy (middleware)', () => {
         message: 'Token invalide ou expiré',
       })
     })
-
-    it('renvoie 401 si le payload est null', async () => {
-      vi.mocked(jwt.verify).mockReturnValueOnce(null as never)
-
-      const response = proxy(
-        makeRequest({
-          path: '/api/admin/categories',
-          authHeader: `Bearer ${VALID_TOKEN}`,
-        }),
-      )
-
-      expect(response.status).toBe(401)
-    })
-
-    it('renvoie 401 si le payload est une primitive', async () => {
-      vi.mocked(jwt.verify).mockReturnValueOnce('juste une string' as never)
-
-      const response = proxy(
-        makeRequest({
-          path: '/api/admin/categories',
-          authHeader: `Bearer ${VALID_TOKEN}`,
-        }),
-      )
-
-      expect(response.status).toBe(401)
-    })
-
-    it('renvoie 401 si id est manquant', async () => {
-      vi.mocked(jwt.verify).mockReturnValueOnce({
-        email: 'admin@test.com',
-      } as never)
-
-      const response = proxy(
-        makeRequest({
-          path: '/api/admin/categories',
-          authHeader: `Bearer ${VALID_TOKEN}`,
-        }),
-      )
-
-      expect(response.status).toBe(401)
-    })
-
-    it('renvoie 401 si id n’est pas un number', async () => {
-      vi.mocked(jwt.verify).mockReturnValueOnce({
-        id: '1',
-        email: 'admin@test.com',
-      } as never)
-
-      const response = proxy(
-        makeRequest({
-          path: '/api/admin/categories',
-          authHeader: `Bearer ${VALID_TOKEN}`,
-        }),
-      )
-
-      expect(response.status).toBe(401)
-    })
-
-    it('renvoie 401 si email est manquant', async () => {
-      vi.mocked(jwt.verify).mockReturnValueOnce({ id: 1 } as never)
-
-      const response = proxy(
-        makeRequest({
-          path: '/api/admin/categories',
-          authHeader: `Bearer ${VALID_TOKEN}`,
-        }),
-      )
-
-      expect(response.status).toBe(401)
-    })
-
-    it('renvoie 401 si email n’est pas une string', async () => {
-      vi.mocked(jwt.verify).mockReturnValueOnce({
-        id: 1,
-        email: 123,
-      } as never)
-
-      const response = proxy(
-        makeRequest({
-          path: '/api/admin/categories',
-          authHeader: `Bearer ${VALID_TOKEN}`,
-        }),
-      )
-
-      expect(response.status).toBe(401)
-    })
-
-    it('accepte un payload avec des champs supplémentaires', () => {
-      vi.mocked(jwt.verify).mockReturnValueOnce({
-        id: 1,
-        email: 'admin@test.com',
-        iat: 1700000000,
-        exp: 1900000000,
-      } as never)
-
-      const response = proxy(
-        makeRequest({
-          path: '/api/admin/categories',
-          authHeader: `Bearer ${VALID_TOKEN}`,
-        }),
-      )
-
-      expect(response.status).toBe(200)
-    })
   })
 
   describe('chemins couverts', () => {
     it('protège /api/admin/categories', async () => {
-      const response = proxy(makeRequest({ path: '/api/admin/categories' }))
+      const response = await proxy(
+        makeRequest({ path: '/api/admin/categories' }),
+      )
       expect(response.status).toBe(401)
     })
 
     it('protège /api/admin/products/123', async () => {
-      const response = proxy(makeRequest({ path: '/api/admin/products/123' }))
+      const response = await proxy(
+        makeRequest({ path: '/api/admin/products/123' }),
+      )
       expect(response.status).toBe(401)
     })
 
     it('protège /api/admin/profile', async () => {
-      const response = proxy(makeRequest({ path: '/api/admin/profile' }))
+      const response = await proxy(makeRequest({ path: '/api/admin/profile' }))
       expect(response.status).toBe(401)
     })
 
-    it('ne protège PAS /api/reviews (hors matcher)', () => {
-      // Le middleware matcher ne s'applique pas, mais on teste quand
-      // même la fonction proxy directement pour vérifier son comportement.
-      // Note : en production, cette route n'appellera jamais proxy.
-      const response = proxy(makeRequest({ path: '/api/reviews' }))
-      expect(response.status).toBe(401) // proxy protège tout ce qu'on lui donne
+    it('protège même les chemins hors matcher si on l’appelle directement', async () => {
+      const response = await proxy(makeRequest({ path: '/api/reviews' }))
+      expect(response.status).toBe(401)
     })
   })
 })

@@ -3,8 +3,7 @@ import { prisma } from '@/app/lib/prisma'
 import { requireAdmin } from '@/app/lib/admin-auth'
 import { validateEmail } from '@/app/lib/validators'
 import type { Prisma } from '@prisma/client'
-import bcrypt from 'bcryptjs'
-
+import { hashPassword, verifyPassword } from '@/app/lib/password'
 // Limites alignées sur le schéma Prisma.
 const NAME_MAX_LENGTH = 100
 const SURNAME_MAX_LENGTH = 100
@@ -181,7 +180,7 @@ const PUT = async (request: NextRequest): Promise<NextResponse> => {
 
     // Changement de mot de passe.
     if (currentPassword !== undefined && newPassword !== undefined) {
-      const isValidPassword = await bcrypt.compare(
+      const isValidPassword = await verifyPassword(
         currentPassword,
         existingAdmin.passwordHash,
       )
@@ -204,7 +203,7 @@ const PUT = async (request: NextRequest): Promise<NextResponse> => {
         )
       }
 
-      update.passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS)
+      update.passwordHash = await hashPassword(newPassword)
     }
 
     if (Object.keys(update).length === 0) {

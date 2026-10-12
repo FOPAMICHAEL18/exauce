@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
+import { verifyToken } from '@/app/lib/jwt'
 import { type AdminData } from '@/app/lib/admin-auth'
 
 const JWT_SECRET = process.env.JWT_SECRET
@@ -19,7 +19,7 @@ function isAdminPayload(value: unknown): value is AdminData {
   return typeof id === 'number' && typeof email === 'string'
 }
 
-const proxy = (request: NextRequest): NextResponse => {
+const proxy = async (request: NextRequest): Promise<NextResponse> => {
   const path = request.nextUrl.pathname
 
   // Route publique : login.
@@ -47,7 +47,8 @@ const proxy = (request: NextRequest): NextResponse => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET)
+    const decoded = await verifyToken(token)
+
 
     // On refuse tout payload qui n’a pas la forme AdminData.
     if (!isAdminPayload(decoded)) {
