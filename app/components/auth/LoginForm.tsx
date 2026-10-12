@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useId } from 'react'
-import { useAuth } from '@/app/hooks/useAuth'
 import Router from 'next/router'
 import { useRouter } from 'next/navigation'
+import {useAuth} from '@/app/contexts/AuthContext'
 
 const FALLBACK_ERROR = 'Impossible de vous connecter. Veuillez réessayer.'
 
 const LoginForm = () => {
-  const { login, loading } = useAuth()
+  const { login, isSubmitting } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -56,7 +56,7 @@ const LoginForm = () => {
             placeholder="admin@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
+            disabled={isSubmitting}
             required
             aria-invalid={error ? 'true' : undefined}
             aria-describedby={error ? errorId : undefined}
@@ -76,7 +76,7 @@ const LoginForm = () => {
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
+            disabled={isSubmitting}
             required
             aria-invalid={error ? 'true' : undefined}
             aria-describedby={error ? errorId : undefined}
@@ -86,10 +86,10 @@ const LoginForm = () => {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={isSubmitting}
           className="w-full px-3 py-3 rounded-md mt-6 bg-[#0A1730] text-white font-medium border-transparent disabled:opacity-50 transition-colors cursor-pointer hover:bg-[#0A1730]/80"
         >
-          {loading ? 'Connexion en cours...' : 'Se connecter'}
+          {isSubmitting ? 'Connexion en cours...' : 'Se connecter'}
         </button>
 
         {error && (

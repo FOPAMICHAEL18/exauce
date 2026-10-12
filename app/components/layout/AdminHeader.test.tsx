@@ -1,57 +1,74 @@
+// app/components/layout/AdminHeader.test.tsx
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import AdminHeader from './AdminHeader'
-import * as navigation from 'next/navigation'
-import { useAuth } from '@/app/hooks/useAuth'
+import { useAuth } from '@/app/contexts/AuthContext'
 
-// Résolution de portée propre avec vi.hoisted()
-const { mockLogout } = vi.hoisted(() => ({
-  mockLogout: vi.fn(),
-}))
+// Mock logout isolé pour pouvoir l'asserter
+const mockLogout = vi.fn()
 
+// Mock de next/navigation : usePathname doit être mockable par test
 vi.mock('next/navigation', () => ({
   usePathname: vi.fn(),
   useRouter: vi.fn(),
 }))
 
-// Mock du hook avec l'alias et le chemin relatif
-vi.mock('@/app/hooks/useAuth', () => ({
-  useAuth: () => ({
-    logout: mockLogout,
-    user: null,
-    loading: false,
-  }),
+// Mock du Context AuthContext (le nouveau chemin)
+vi.mock('@/app/contexts/AuthContext', () => ({
+  useAuth: vi.fn(),
 }))
 
-vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    logout: mockLogout,
-    user: null,
+// Import après le mock pour avoir la version mockée
+import * as navigation from 'next/navigation'
+
+function mockAuth(
+  overrides: Partial<ReturnType<typeof useAuth>> = {},
+): void {
+  vi.mocked(useAuth).mockReturnValue({
+    admin: { id: 1, email: 'admin@test.com', name: 'Admin' },
+    isAuthenticated: true,
     loading: false,
-  }),
-}))
+    isSubmitting: false,
+    login: vi.fn(),
+    logout: mockLogout,
+    ...overrides,
+  })
+}
 
 describe('AdminHeader Component', () => {
   const mockOnMenuToggle = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Par défaut, l'utilisateur est connecté
+    mockAuth()
   })
 
   it('affiche le titre dynamique pour la modification d’un produit (/admin/products/123/edit)', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/admin/products/123/edit')
+    vi.mocked(navigation.usePathname).mockReturnValue(
+      '/admin/products/123/edit',
+    )
 
     render(<AdminHeader onMenuToggle={mockOnMenuToggle} />)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Modifier le produit' })).toBeDefined()
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Modifier le produit' }),
+    ).toBeInTheDocument()
   })
 
   it('affiche le titre dynamique pour la modification d’une catégorie (/admin/categories/456/edit)', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/admin/categories/456/edit')
+    vi.mocked(navigation.usePathname).mockReturnValue(
+      '/admin/categories/456/edit',
+    )
 
     render(<AdminHeader onMenuToggle={mockOnMenuToggle} />)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Modifier la categorie' })).toBeDefined()
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Modifier la categorie',
+      }),
+    ).toBeInTheDocument()
   })
 
   it('affiche les titres statiques selon les routes connues', () => {
@@ -60,32 +77,41 @@ describe('AdminHeader Component', () => {
       { path: '/admin/products', expectedTitle: 'Produits' },
       { path: '/admin/products/new', expectedTitle: 'Creer un produits' },
       { path: '/admin/categories', expectedTitle: 'Gestion des catégories' },
-      { path: '/admin/categories/new', expectedTitle: "Creation d'une catégories" },
+      {
+        path: '/admin/categories/new',
+        expectedTitle: "Creation d'une catégories",
+      },
       { path: '/admin/reviews', expectedTitle: 'Commentaires' },
       { path: '/admin/contact', expectedTitle: 'Coordonnées' },
       { path: '/admin/profil', expectedTitle: "Profil de l'utilisateur" },
     ]
 
     routesWithTitles.forEach(({ path, expectedTitle }) => {
-      vi.spyOn(navigation, 'usePathname').mockReturnValue(path)
+      vi.mocked(navigation.usePathname).mockReturnValue(path)
 
-      const { unmount } = render(<AdminHeader onMenuToggle={mockOnMenuToggle} />)
+      const { unmount } = render(
+        <AdminHeader onMenuToggle={mockOnMenuToggle} />,
+      )
 
-      expect(screen.getByRole('heading', { level: 1, name: expectedTitle })).toBeDefined()
+      expect(
+        screen.getByRole('heading', { level: 1, name: expectedTitle }),
+      ).toBeInTheDocument()
       unmount()
     })
   })
 
   it('affiche le titre par défaut "Administration" pour une route inconnue', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/admin/unknown-route')
+    vi.mocked(navigation.usePathname).mockReturnValue('/admin/unknown-route')
 
     render(<AdminHeader onMenuToggle={mockOnMenuToggle} />)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Administration' })).toBeDefined()
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Administration' }),
+    ).toBeInTheDocument()
   })
 
   it('appelle la fonction onMenuToggle lors du clic sur le bouton menu mobile', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/admin/dashboard')
+    vi.mocked(navigation.usePathname).mockReturnValue('/admin/dashboard')
 
     render(<AdminHeader onMenuToggle={mockOnMenuToggle} />)
 
@@ -96,7 +122,7 @@ describe('AdminHeader Component', () => {
   })
 
   it('appelle la fonction logout lors du clic sur le bouton déconnexion', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/admin/dashboard')
+    vi.mocked(navigation.usePathname).mockReturnValue('/admin/dashboard')
 
     render(<AdminHeader onMenuToggle={mockOnMenuToggle} />)
 
@@ -107,11 +133,13 @@ describe('AdminHeader Component', () => {
   })
 
   it('rend le lien pour ajouter un produit avec l’attribut href correct', () => {
-    vi.spyOn(navigation, 'usePathname').mockReturnValue('/admin/dashboard')
+    vi.mocked(navigation.usePathname).mockReturnValue('/admin/dashboard')
 
     render(<AdminHeader onMenuToggle={mockOnMenuToggle} />)
 
-    const addProductLink = screen.getByRole('link', { name: /ajouter un produit/i })
-    expect(addProductLink.getAttribute('href')).toBe('/Admin/Products/New')
+    const addProductLink = screen.getByRole('link', {
+      name: /ajouter un produit/i,
+    })
+    expect(addProductLink).toHaveAttribute('href', '/Admin/Products/New')
   })
 })

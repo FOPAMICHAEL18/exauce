@@ -1,11 +1,12 @@
 import { Children } from "react";
 import AdminLayout from "../components/admin/AdminLayout";
+import { AuthProvider } from "../contexts/AuthContext";
 
 const Layout = ({children}: {children: React.ReactNode}) => {
     return (
-        <AdminLayout>
-            {children}
-        </AdminLayout>
+        <AuthProvider>
+            <AdminLayout>{children}</AdminLayout>
+        </AuthProvider>
     )
 }
 

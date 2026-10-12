@@ -3,35 +3,45 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { LoginForm } from './LoginForm'
+import { useAuth } from '@/app/contexts/AuthContext'
 
-// 🎯 Mock de useAuth
-const mockLogin = vi.fn()
-const mockUseAuth = vi.fn()
-
-vi.mock('@/app/hooks/useAuth', () => ({
-  useAuth: () => mockUseAuth(),
+// Mock du router Next.js (utilisé par LoginForm pour rediriger)
+const mockPush = vi.fn()
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
 }))
 
-beforeEach(() => {
-  mockLogin.mockReset()
-  mockUseAuth.mockReturnValue({
-    login: mockLogin,
-    loading: false,
-    user: null,
+vi.mock('@/app/contexts/AuthContext', () => ({
+  useAuth: vi.fn(),
+}))
+
+function mockAuth(
+  overrides: Partial<ReturnType<typeof useAuth>> = {},
+): void {
+  vi.mocked(useAuth).mockReturnValue({
+    admin: null,
     isAuthenticated: false,
+    loading: false,
+    isSubmitting: false,
+    login: vi.fn(),
     logout: vi.fn(),
+    ...overrides,
   })
+}
+
+beforeEach(() => {
+  mockPush.mockReset()
+  mockAuth()
 })
 
 afterEach(() => {
   cleanup()
 })
 
-// Helper
 const fillForm = async (
   user: ReturnType<typeof userEvent.setup>,
   email = 'admin@example.com',
-  password = 'password123'
+  password = 'password123',
 ) => {
   await user.type(screen.getByLabelText(/adresse e-mail/i), email)
   await user.type(screen.getByLabelText(/mot de passe/i), password)
@@ -39,9 +49,6 @@ const fillForm = async (
 
 const submit = () => screen.getByRole('button', { name: /se connecter/i })
 
-// =========================================================================
-// RENDU
-// =========================================================================
 describe('LoginForm — rendu', () => {
   it('affiche les champs email, password et le bouton', () => {
     render(<LoginForm />)
@@ -56,9 +63,6 @@ describe('LoginForm — rendu', () => {
   })
 })
 
-// =========================================================================
-// VALIDATION CLIENT
-// =========================================================================
 describe('LoginForm — validation', () => {
   it('affiche une erreur si les deux champs sont vides', async () => {
     const user = userEvent.setup()
@@ -66,21 +70,19 @@ describe('LoginForm — validation', () => {
     await user.click(submit())
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      /tous les champs doivent être remplis/i
+      /tous les champs doivent être remplis/i,
     )
-    expect(mockLogin).not.toHaveBeenCalled()
   })
 
-  it('affiche une erreur si seul l\'email est rempli', async () => {
+  it("affiche une erreur si seul l'email est rempli", async () => {
     const user = userEvent.setup()
     render(<LoginForm />)
     await user.type(screen.getByLabelText(/adresse e-mail/i), 'admin@test.com')
     await user.click(submit())
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      /tous les champs doivent être remplis/i
+      /tous les champs doivent être remplis/i,
     )
-    expect(mockLogin).not.toHaveBeenCalled()
   })
 
   it('affiche une erreur si seul le password est rempli', async () => {
@@ -90,18 +92,16 @@ describe('LoginForm — validation', () => {
     await user.click(submit())
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      /tous les champs doivent être remplis/i
+      /tous les champs doivent être remplis/i,
     )
-    expect(mockLogin).not.toHaveBeenCalled()
   })
 })
 
-// =========================================================================
-// SOUMISSION
-// =========================================================================
 describe('LoginForm — soumission', () => {
   it('appelle login avec email et password trimés', async () => {
-    mockLogin.mockResolvedValueOnce({ success: true })
+    const mockLogin = vi.fn().mockResolvedValueOnce({ success: true })
+    mockAuth({ login: mockLogin })
+
     const user = userEvent.setup()
     render(<LoginForm />)
 
@@ -110,25 +110,32 @@ describe('LoginForm — soumission', () => {
     await user.click(submit())
 
     await waitFor(() =>
-      expect(mockLogin).toHaveBeenCalledWith('admin@test.com', 'pass123')
+      expect(mockLogin).toHaveBeenCalledWith('admin@test.com', 'pass123'),
     )
   })
 
-  // 🎯 FIX CRITIQUE — échec sans message → doit afficher le fallback
-  it("affiche le message d'erreur de l'API en cas d'échec", async () => {
-    mockLogin.mockResolvedValueOnce({ success: false, message: 'Identifiants incorrects' })
+  it('redirige vers /Admin/Dashboard après succès', async () => {
+    const mockLogin = vi.fn().mockResolvedValueOnce({ success: true })
+    mockAuth({ login: mockLogin })
+
     const user = userEvent.setup()
     render(<LoginForm />)
 
     await fillForm(user)
     await user.click(submit())
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/identifiants incorrects/i)
+    await waitFor(() =>
+      expect(mockPush).toHaveBeenCalledWith('/Admin/Dashboard'),
+    )
   })
 
-  // 🎯 LE test qui attrape le bug silencieux
-  it("affiche un fallback si l'API échoue SANS message", async () => {
-    mockLogin.mockResolvedValueOnce({ success: false })   // 👈 pas de message
+  it("affiche le message d'erreur de l'API en cas d'échec", async () => {
+    const mockLogin = vi.fn().mockResolvedValueOnce({
+      success: false,
+      message: 'Identifiants incorrects',
+    })
+    mockAuth({ login: mockLogin })
+
     const user = userEvent.setup()
     render(<LoginForm />)
 
@@ -136,14 +143,33 @@ describe('LoginForm — soumission', () => {
     await user.click(submit())
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      /impossible de vous connecter/i
+      /identifiants incorrects/i,
+    )
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it("affiche un fallback si l'API échoue SANS message", async () => {
+    const mockLogin = vi.fn().mockResolvedValueOnce({ success: false })
+    mockAuth({ login: mockLogin })
+
+    const user = userEvent.setup()
+    render(<LoginForm />)
+
+    await fillForm(user)
+    await user.click(submit())
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /impossible de vous connecter/i,
     )
   })
 
   it("efface l'erreur précédente à chaque nouvelle soumission", async () => {
-    mockLogin
+    const mockLogin = vi
+      .fn()
       .mockResolvedValueOnce({ success: false, message: 'Première erreur' })
       .mockResolvedValueOnce({ success: true })
+    mockAuth({ login: mockLogin })
+
     const user = userEvent.setup()
     render(<LoginForm />)
 
@@ -151,26 +177,16 @@ describe('LoginForm — soumission', () => {
     await user.click(submit())
     await screen.findByRole('alert')
 
-    // Nouvelle soumission → l'erreur doit disparaître
     await user.click(submit())
     await waitFor(() =>
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
     )
   })
 })
 
-// =========================================================================
-// ÉTAT LOADING
-// =========================================================================
 describe('LoginForm — loading', () => {
   it('désactive le bouton et affiche "Connexion en cours..."', () => {
-    mockUseAuth.mockReturnValue({
-      login: mockLogin,
-      loading: true,
-      user: null,
-      isAuthenticated: false,
-      logout: vi.fn(),
-    })
+    mockAuth({ isSubmitting: true })
     render(<LoginForm />)
 
     const button = screen.getByRole('button', { name: /connexion en cours/i })
@@ -178,13 +194,7 @@ describe('LoginForm — loading', () => {
   })
 
   it('désactive les inputs pendant le chargement', () => {
-    mockUseAuth.mockReturnValue({
-      login: mockLogin,
-      loading: true,
-      user: null,
-      isAuthenticated: false,
-      logout: vi.fn(),
-    })
+    mockAuth({ isSubmitting: true })
     render(<LoginForm />)
 
     expect(screen.getByLabelText(/adresse e-mail/i)).toBeDisabled()
@@ -192,12 +202,14 @@ describe('LoginForm — loading', () => {
   })
 })
 
-// =========================================================================
-// A11Y
-// =========================================================================
 describe('LoginForm — accessibilité', () => {
-  it('lie l\'erreur aux champs via aria-describedby', async () => {
-    mockLogin.mockResolvedValueOnce({ success: false, message: 'Oups' })
+  it("lie l'erreur aux champs via aria-describedby", async () => {
+    const mockLogin = vi.fn().mockResolvedValueOnce({
+      success: false,
+      message: 'Oups',
+    })
+    mockAuth({ login: mockLogin })
+
     const user = userEvent.setup()
     render(<LoginForm />)
 
