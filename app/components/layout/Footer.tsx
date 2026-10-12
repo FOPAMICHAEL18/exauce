@@ -15,7 +15,7 @@ const Footer = async () => {
                     <div>
                         <h3 className="text-xl font-bold mb-4">exauce</h3>
                         <p className="text-gray-400 text-sm">
-                            Transport, export de marchandise de qualite et abordable depuis la chine et la russie.
+                            Transport, export de marchandise de qualite et abordable depuis la chine et la turquie.
                         </p>
                     </div>
                     <div>

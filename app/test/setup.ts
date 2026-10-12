@@ -8,6 +8,8 @@ import '@testing-library/jest-dom/vitest'
 
 expect.extend(matchers)
 
+process.env.SCRYPT_N = '1024'   // Version rapide pour les tests
+
 // Mock URL.createObjectURL / revokeObjectURL (non implémentés par jsdom)
 let urlCounter = 0
 Object.defineProperty(URL, 'createObjectURL', {

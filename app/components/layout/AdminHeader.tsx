@@ -1,7 +1,7 @@
 "use client"
 import {useRouter} from 'next/navigation'
 import {usePathname} from 'next/navigation'
-import { useAuth } from '@/app/hooks/useAuth'
+import { useAuth } from '@/app/contexts/AuthContext'
 import Link from 'next/link'
 import { Menu, Plus, LogOut } from 'lucide-react'
 
