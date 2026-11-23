@@ -5,10 +5,5 @@
   "high": true,
   "critical": true,
   "allowlist": [
-    // braces ReDoS - Aucune version corrigée n'existe (3.0.3 est la dernière).
-    // Utilisé uniquement via vinext -> vite-plugin-commonjs -> fast-glob -> micromatch.
-    // Uniquement au build (devDependency), jamais sur une entrée utilisateur à l'exécution.
-    // À retirer dès qu'un correctif upstream est publié.
-    "GHSA-vfj7-8cjw-p6xm"
   ]
 }
